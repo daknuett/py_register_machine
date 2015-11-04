@@ -1,3 +1,7 @@
+; print an integer value to the 
+; outputregister at mem<2>
+; NOTE: the value is inverted!!
+; -> 25 -> output -> 52
 print_int:
 ; number is in 0
 mov 0 12
