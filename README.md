@@ -16,18 +16,26 @@ You can test the engine using `python3 assembler.py`.
 It will calculate some fibonacci numbers and print one to _/dev/stdout_.
 You may take a look at _processor.py_, there you can see how easy it is
 to generate an own modified machine. 
+
 ___NOTE___: it is important, to use the assembler with the correct
 processor definitions, the result would be unpredictable, if you won't.
+
 ___NOTE___: the programm is usually executed directly from the flash drive,
 but you also can load it into the ram. In addition to this,
 Flash, Ram and registers are handled completly the same way: you can make
 memory operations __without__ using a register! (but it is not really recommended.)
+
 ___NOTE___: usually the only symbolic names, that are used specify a part
 of the program. You can specify register names in an _.inc_ file and 
 include them using the __#include__ statement.
+
 Predefined routines can be included using the __#import__ statement.
 This means, that no linking and/or memory rearrangement is supported,
 but you are _welcome_ to add a better compiler/assembler/linker.
 The commands __push__ or __st__ or __ld__ are not yet implemented.
+
+The engine is not designed for a fix usage, but for expansion 
+_from the user_, so no assembly directive definition is made,
+as _everybody_ may add his very own directives. 
 
 _Daniel Knuettel_
