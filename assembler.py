@@ -107,7 +107,7 @@ class Assembler(object):
 		self.symbols={}
 		self.line_count=0
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
-		self.i_commands=["ldi","addi","subi","xori","ori","andi"]
+		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
 		self.commands={v:k for k,v in self.processor.tb_commands.items()}
 		self.commands.update({v:k for k,v in self.processor.db_commands.items()})
 		self.commands.update({v:k for k,v in self.processor.sg_commands.items()})
@@ -233,8 +233,6 @@ class UnboundReferenceError(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
 	
-
-
 
 
 if(__name__=="__main__"):
