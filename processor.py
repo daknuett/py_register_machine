@@ -13,7 +13,21 @@ class JMPException(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
 
+def Processor_from_str(_str):
+	# doing this using a csv interpreter would be
+	# just an overkill.
+	members=_str.split(";")
+	rm_size=int(members[0])
+	fl_size=int(members[1])
+	tb_commands=eval(members[2])
+	db_commands=eval(members[3])
+	sg_commands=eval(members[4])
+	return Processor(ram=Ram(rm_size), flash=Flash(fl_size),tb_commands=tb_commands,db_commands=db_commands,sg_commands=sg_commands)
+
+
+
 class Processor(object):
+	from_str=Processor_from_str
 	def __init__(self,ram=None,flash=None,tb_commands=None,db_commands=None,sg_commands=None,*args):
 		if(ram==None):
 			self.ram=Ram(DEFAULT_RAM_S)
@@ -39,6 +53,12 @@ class Processor(object):
 		self.loc=self.ram.size # the current ptr for __process__ placed at the beginning of the flash.
 		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi}
 		self.stack=[]
+	def __dumps__(self):
+		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
+	def __dump__(self,fname):
+		f=open(fname,"w")
+		f.write(self.__dumps__()+"\n")
+		f.close()
 	def mov(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
@@ -338,6 +358,18 @@ class Processor(object):
 		old_loc,old_pc=self.stack.pop()
 		old_real_head=old_loc+old_pc
 		self.__jmp__(old_real_head+2)
+	def process(self):
+		""" start above HIGH_RAMEND to execute. 
+			This is flash[0]."""
+		while(1):
+			try:
+				self.__process__(self.loc)
+			except SIGSEGV as e: # something  bad happened
+				self.ram.dump()
+				raise e
+			except JMPException:
+				continue
+
 
 
 
@@ -368,13 +400,7 @@ class Processor(object):
 if(__name__=="__main__"):
 	f=Flash(360,saved=True)
 	p=Processor(flash=f)
-	at=160
-	while(1):
-		try:
-			p.__process__(at)
-		except SIGSEGV as e:
-			p.ram.dump()
-			raise e
-		except JMPException:
-			at=p.loc
-			continue
+	try:
+		p.process()
+	except BaseException as e:
+		print(e)

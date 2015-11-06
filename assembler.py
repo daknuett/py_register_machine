@@ -242,14 +242,5 @@ if(__name__=="__main__"):
 	a=Assembler(p,"test.asm.pr")
 	a.compile()
 	p.flash.dump("flash_fib.save")
-	at=160
-	while(1):
-		try:
-			p.__process__(at)
-		except SIGSEGV as e:
-			p.ram.dump()
-			raise e
-		except JMPException:
-			at=p.loc
-			continue
-
+#p.__dump__("processor.save")
+	p.process()
