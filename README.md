@@ -38,4 +38,6 @@ The engine is not designed for a fix usage, but for expansion
 _from the user_, so no assembly directive definition is made,
 as _everybody_ may add his very own directives. 
 
+___See___ the project's wikii < https://github.com/daknuett/py_register_machine/wiki > page for more info about usage.
+
 _Daniel Knuettel_
