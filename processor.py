@@ -5,6 +5,7 @@ from memory import *
 
 DEFAULT_RAM_S=160
 DEFAULT_FLASH_S=360
+DEBUG=False
 
 class SIGSEGV(BaseException):
 	def __init__(self,*args):
@@ -381,6 +382,17 @@ class Processor(object):
 			_ptr_loc=self.flash
 			ptr-=self.ram.size
 		com=_ptr_loc.read(ptr)
+		if(DEBUG):
+			try:
+				print(_ptr_loc.read(ptr),self.sg_commands[com])
+			except:
+				try:
+					print(_ptr_loc.read(ptr),self.db_commands[com],_ptr_loc.read(ptr+1))
+				except:
+					try:
+						print(_ptr_loc.read(ptr),self.tb_commands[com],_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
+					except:
+						pass
 		if(com in self.sg_commands):
 			self.stddef[self.sg_commands[com]]()
 			self.PC+=1

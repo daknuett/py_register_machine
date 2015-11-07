@@ -107,23 +107,41 @@ struct _SFRCommandHolder * new_SFRCommandHolder(SFRCommand * com, struct _SFRCom
 }
 
 
-struct _SFRCommandHolder * sfr_comms;
+struct _SFRCommandHolder * sfr_comms=NULL;
 
 void set_sfr_comms(struct _SFRCommandHolder *  h)
 {
+	#ifdef DEBUG
+	printf("adding ( %zd => %zd => %zd  )\n",h,h->com,h->com->funct);
+	#endif
 	sfr_comms=h;
 }
-
 unsigned int SpecialFunctionRegister_exec(unsigned int val)
 {
 	struct _SFRCommandHolder * curr=sfr_comms;
 	unsigned int ret=-1;
 	while (curr!=NULL)
 	{
+		#ifdef DEBUG
+		printf("( %zd => %zd => %zd ) %u ?= %u",curr,curr->com,curr->com->funct,curr->com->val,val);
+		#endif
 		if(curr->com->val==val)
 		{
+			#ifdef DEBUG
+			printf("\t\tTRUE\n");
+			#endif
+
 			ret=curr->com->funct();
+			#ifdef DEBUG
+			printf("callback done.\n");
+			#endif
 		}
+		#ifdef DEBUG
+		else
+		{
+			printf("\t\tFALSE\n");
+		}
+		#endif
 		curr=curr->next;
 	}
 	return ret;

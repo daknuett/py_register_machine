@@ -9,5 +9,8 @@ call fib
 mov 1 0
 call print_int
 ldi a 2
+ldi 05 0
+ldi 03 3
+ldi 04 3
 ldi ff 3
 

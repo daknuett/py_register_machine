@@ -43,7 +43,12 @@ class Ram(object):
 		self.size=size
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers));
 		self._repr=self.memlib.newRam(c_size_t(size),register_reprs,register_count)
+		self.callback_functs=[]
+
 		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
+		def hw_print_int():
+			print(self.read(0))
+		self.add_SFR_callback(0x04,SFR_COMM(hw_print_int))
 	def read(self,_iter):
 		return c_int(self.memlib.Ram_read(self._repr,c_size_t(_iter))).value
 	def write(self,_iter,value):
@@ -54,6 +59,7 @@ class Ram(object):
 		my_callback=self.memlib.newSFRCommand(c_uint(operation_number),callback)
 		new_all_callbacks=self.memlib.new_SFRCommandHolder(my_callback,all_callbacks)
 		self.memlib.set_sfr_comms(new_all_callbacks)
+		self.callback_functs.append(callback)
 	def __getitem__(self,_iter):
 		return self.read(_iter)
 	def __setitem__(self,_iter,ele):
@@ -77,8 +83,7 @@ class Ram(object):
 def callback_exit():
 	print("exiting.")
 	sys.exit(0)
-	# never reached
-	return c_int(1)
+	return c_int(0)
 
 class Flash(object):
 	def __init__(self,size,memlib_file_name="./libmemory.so",std_savename=b"flash.save",saved=False):
