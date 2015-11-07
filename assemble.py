@@ -3,7 +3,7 @@ from processor import *
 from memory import *
 
 from optparse import OptionParser
-import os
+import os,sys
 
 """
 assemble a file and store the flash.
@@ -20,6 +20,12 @@ if __name__=="__main__":
 	(opts,args)=parser.parse_args()
 
 	DEBUG=opts.verbose
+	if(opts.fname==None):
+		print("need -f try -h")
+		sys.exit(1)
+	if(opts.proc_def==None):
+		print("need -p try -h")
+		sys.exit(1)
 	p=Preprocessor(opts.fname)
 	p.do_all()
 	proc=Processor.from_str(open(opts.proc_def).read())
