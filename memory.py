@@ -44,7 +44,6 @@ class Ram(object):
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers));
 		self._repr=self.memlib.newRam(c_size_t(size),register_reprs,register_count)
 		self.callback_functs=[]
-
 		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
 		def hw_print_int():
 			print(self.read(0))
