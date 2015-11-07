@@ -38,16 +38,23 @@ class SpecialFunctionRegister(Register):
 
 class Ram(object):
 	""""""
-	def __init__(self,size,registers=b"4/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n",register_count=4,memlib_file_name="./libmemory.so"):
+	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;8,3,n;",register_count=10,memlib_file_name="./libmemory.so"):
 		self.memlib=cdll.LoadLibrary(memlib_file_name)
 		self.size=size
-		register_reprs=self.memlib.Registers_from_string(c_char_p(registers));
+		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
 		self._repr=self.memlib.newRam(c_size_t(size),register_reprs,register_count)
 		self.callback_functs=[]
 		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
 		def hw_print_int():
 			print(self.read(0))
 		self.add_SFR_callback(0x04,SFR_COMM(hw_print_int))
+
+		# we need the number of registers
+		indx=registers.index("/")
+		self.reg_cnt=int(registers[0:indx])
+		# a stack for push
+		self.stack=[ [] for i in range(self.reg_cnt)]
+
 	def read(self,_iter):
 		return c_int(self.memlib.Ram_read(self._repr,c_size_t(_iter))).value
 	def write(self,_iter,value):
@@ -78,6 +85,14 @@ class Ram(object):
 		else:
 			fname=fname.encode("ascii")
 		self.memlib.Ram_dump(self._repr,fname)
+	def pushr(self,nmbr):
+		if(nmbr>=self.reg_cnt):
+			return
+		self.stack[nmbr].append(self.read(nmbr))
+	def popr(self,nmbr):
+		if(nmbr>=self.reg_cnt):
+			return
+		self.write(nmbr,self.stack[nmbr].pop())
 
 def callback_exit():
 	print("exiting.")
@@ -114,10 +129,5 @@ class Flash(object):
 		return "< {0} object >:\n{2} {1}{3}".format(Flash.__qualname__,dumps,"{","}")
 
 if (__name__=="__main__"):
-	r=Ram(40,registers=b"4/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n",register_count=4)
-#	r.add_SFR_callback(0xff,SFR_COMM(callback_exit))
-	r.write(0x12,13)
-	r.write(2,3+48)
-	r.write(2,12)
-	r.write(0x3,0xff)
+	r=Ram(100)
 

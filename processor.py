@@ -43,7 +43,7 @@ class Processor(object):
 		else:
 			self.tb_commands=tb_commands
 		if(db_commands==None):
-			self.db_commands={0x6:"inc",0x7:"dec",0x8:"neg",0x12:"call"}
+			self.db_commands={0x6:"inc",0x7:"dec",0x8:"neg",0x12:"call",0x17:"pop",0x18:"push"}
 		else:
 			self.db_commands=db_commands
 		if(sg_commands==None):
@@ -52,7 +52,7 @@ class Processor(object):
 			self.sg_commands=sg_commands
 		self.PC=0 # used to move over the memory
 		self.loc=self.ram.size # the current ptr for __process__ placed at the beginning of the flash.
-		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi}
+		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push}
 		self.stack=[]
 	def __dumps__(self):
 		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
@@ -359,6 +359,12 @@ class Processor(object):
 		old_loc,old_pc=self.stack.pop()
 		old_real_head=old_loc+old_pc
 		self.__jmp__(old_real_head+2)
+
+	def pop(self,reg):
+		self.ram.popr(reg)
+	def push(self,reg):
+		self.ram.pushr(reg)
+
 	def process(self):
 		""" start above HIGH_RAMEND to execute. 
 			This is flash[0]."""
