@@ -93,6 +93,8 @@ class Ram(object):
 		if(nmbr>=self.reg_cnt):
 			return
 		self.write(nmbr,self.stack[nmbr].pop())
+	def set_x_data_at(at):
+		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at))
 
 def callback_exit():
 	print("exiting.")
@@ -129,5 +131,5 @@ class Flash(object):
 		return "< {0} object >:\n{2} {1}{3}".format(Flash.__qualname__,dumps,"{","}")
 
 if (__name__=="__main__"):
-	r=Ram(100)
+	r=Ram(100,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;8,3,n;")
 
