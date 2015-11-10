@@ -30,6 +30,7 @@ if __name__=="__main__":
 	p.do_all()
 	proc=Processor.from_str(open(opts.proc_def).read())
 	asm=Assembler(proc,opts.fname+".pr")
-	asm.compile()
+	total,used=asm.compile()
+	print("{} of {} blocks used: {} %".format(used,total,(used/total)*100))
 	proc.flash.dump(opts.out_file)
 	os.system("rm -f "+opts.fname+"\.pr*")	

@@ -229,6 +229,7 @@ class Assembler(object):
 				self.processor.flash.write(i,new_compiled[i])
 			else:
 				self.processor.flash.write(i,int(new_compiled[i],16))
+		return (self.processor.flash.size,self.line_count)
 class UnboundReferenceError(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
@@ -240,7 +241,8 @@ if(__name__=="__main__"):
 	pr.do_all()
 	p=Processor()
 	a=Assembler(p,"test.asm.pr")
-	a.compile()
+	total,used=a.compile()
+	print("{} of {} blocks used: {} %".format(used,total,(used/total)*100))
 	p.flash.dump("flash_fib.save")
 #p.__dump__("processor.save")
 	p.process()
