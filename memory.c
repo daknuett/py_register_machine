@@ -14,7 +14,7 @@ struct _Register
 	unsigned int name;
 	void ( * write)( Register *, int);
 	int ( * read )(Register *);
-	void * x_data; // xtra data, file FILE streams,...
+	void * x_data; // xtra data, FILE streams,...
 };
 
 //typedef struct _Register Register;
@@ -190,16 +190,19 @@ IOFuncts * newIOFuncts(void (* write)(Register * reg,int val), int (* read)(Regi
 
 void IORegister_write(Register * reg,int val)
 {
+	printf("IORegister_write ( %zd ) : %d\n",reg,val);
 	((IOFuncts * )reg->x_data)->write(reg,val);
 }
 int IORegister_read(Register * reg)
 {
+	printf("IORegister_read ( %zd ) \n",reg);
 	return ((IOFuncts * )reg->x_data)->read(reg);
 }
 
 /* WARNING: after calling newIORegister you have to call IORegister_set_functs */
 Register * newIORegister(unsigned int name)
 {
+	printf("newIORegister ( %u )\n",name);
 	return newRegister(name,IORegister_write,IORegister_read);
 }
 
@@ -224,6 +227,7 @@ Register ** Registers_from_string(char * string)
 		{
 			printf("unable to scan 3 objects!\n");
 		}
+		printf("%u\n",type);
 		switch(type)
 		{
 			case (SFR_REG):
