@@ -47,7 +47,10 @@ class Ram(object):
 		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
 		def hw_print_int():
 			print(self.read(0))
+		def ram_dump():
+			self.dump()
 		self.add_SFR_callback(0x04,SFR_COMM(hw_print_int))
+		self.add_SFR_callback(0x05,SFR_COMM(ram_dump))
 
 		# we need the number of registers
 		indx=registers.index("/")

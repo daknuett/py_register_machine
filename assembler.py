@@ -127,6 +127,24 @@ class Assembler(object):
 					print("{0} compiling as command(len=3)".format(self.line_count))
 				if(len(cms)!=3):
 					raise SemanticError("command {0} wants 2 args, but got {1}: {2}".format(cms[0],len(cms),line))
+				# this will allow the at&t ptr handling with ``mov (ptr) addr''
+				if("pmov" in self.tb_commands):
+					if(cms[0]=="mov" and cms[1][0]=="("):
+						if(DEBUG):
+							print(" interpreting {0} as pmov".format(line))
+						cms[0]="pmov"
+						cms[1]=cms[1][1:cms[1].index(")")]
+						if(DEBUG):
+							print("  new line: {0}".format(" ".join(cms)))
+
+				if("movp" in self.tb_commands):
+					if(cms[0]=="mov" and cms[2][0]=="("):
+						if(DEBUG):
+							print(" interpreting {0} as movp".format(line))
+						cms[0]="movp"
+						cms[2]=cms[2][1:cms[2].index(")")]
+						if(DEBUG):
+							print("  new line: {0}".format(" ".join(cms)))
 				try:
 					i=int(cms[1],16)
 				except :
@@ -244,5 +262,5 @@ if(__name__=="__main__"):
 	total,used=a.compile()
 	print("{} of {} blocks used: {} %".format(used,total,(used/total)*100))
 	p.flash.dump("flash_fib.save")
-#p.__dump__("processor.save")
 	p.process()
+	p.ram.__dump__("ram.dump")

@@ -39,7 +39,7 @@ class Processor(object):
 		else:
 			self.flash=flash
 		if(tb_commands==None):
-			self.tb_commands={0x1:"mov",0x2:"add",0x3:"sub",0x4:"mul",0x5:"ldi",0xa:"jgt",0xb:"subi",0xc:"addi",0xd:"jle",0xe:"jeq",0xf:"jne",0x10:"jlt",0x13:"jge",0x14:"mod",0x15:"modi",0x16:"div"}
+			self.tb_commands={0x1:"mov",0x2:"add",0x3:"sub",0x4:"mul",0x5:"ldi",0xa:"jgt",0xb:"subi",0xc:"addi",0xd:"jle",0xe:"jeq",0xf:"jne",0x10:"jlt",0x13:"jge",0x14:"mod",0x15:"modi",0x16:"div",0x19:"pmov",0x1a:"movp"}
 		else:
 			self.tb_commands=tb_commands
 		if(db_commands==None):
@@ -53,7 +53,7 @@ class Processor(object):
 		self.PC=0 # used to move over the memory
 		self.total_pc=0 # complete number of memory movements
 		self.loc=self.ram.size # the current ptr for __process__ placed at the beginning of the flash.
-		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push}
+		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp}
 		self.stack=[]
 	def __dumps__(self):
 		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
@@ -66,6 +66,39 @@ class Processor(object):
 		if(_in>=self.ram.size):
 			_from=self.flash
 			_in-=self.ram.size
+		_to=self.ram
+		if(_out>=self.ram.size):
+			_to=self.flash
+			_out-=self.ram.size
+		_to.write(_out,_from.read(_in))
+	def movp(self,_in,_out):
+		_from=self.ram
+		if(_in>=self.ram.size):
+			_from=self.flash
+			_in-=self.ram.size
+		_to=self.ram
+		if(_out>=self.ram.size):
+			_to=self.flash
+			_out-=self.ram.size
+		_out=_to.read(_out)
+		_to=self.ram
+		if(_out>=self.ram.size):
+			_to=self.flash
+			_out-=self.ram.size
+
+		_to.write(_out,_from.read(_in))
+	def pmov(self,_in,_out): # mov from the ptr in _in to _out
+		_from=self.ram
+		if(_in>=self.ram.size):
+			_from=self.flash
+			_in-=self.ram.size
+		_in=_from.read(_in)
+
+		_from=self.ram
+		if(_in>=self.ram.size):
+			_from=self.flash
+			_in-=self.ram.size
+
 		_to=self.ram
 		if(_out>=self.ram.size):
 			_to=self.flash

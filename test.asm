@@ -10,7 +10,19 @@ mov 1 0
 call print_int
 ldi a 2
 ldi 05 0
-ldi 03 3
 ldi 04 3
+
+; pointer !
+ldi 50 4
+movp 0 4
+ldi 3 0
+pmov 4 0
+ldi 04 3
+; at&t style
+mov 0 (4)
+ldi 3 0
+mov (4) 0
+ldi 04 3
+
 ldi ff 3
 
