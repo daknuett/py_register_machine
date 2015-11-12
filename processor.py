@@ -51,6 +51,7 @@ class Processor(object):
 		else:
 			self.sg_commands=sg_commands
 		self.PC=0 # used to move over the memory
+		self.total_pc=0 # complete number of memory movements
 		self.loc=self.ram.size # the current ptr for __process__ placed at the beginning of the flash.
 		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push}
 		self.stack=[]
@@ -172,7 +173,9 @@ class Processor(object):
 	def __jmp__(self,ptr):
 		""" move the ptr to a new place """
 		oldloc=(self.loc,self.PC)
-		self.loc=ptr-self.PC
+		self.loc=ptr
+		self.total_pc+=self.PC
+		self.PC=0
 		raise JMPException(str(oldloc))
 	def jmp(self,loc):
 		self.__jmp__(loc)
