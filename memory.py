@@ -6,14 +6,15 @@ from ctypes import *
 import os,time,sys
 
 SFR_COMM=CFUNCTYPE(c_void_p)
-IO_FUNCT_READ=CFUNCTYPE(c_void_p)
-IO_FUNCT_WRITE=CFUNCTYPE(c_void_p,c_int)
+IO_FUNCT_READ=CFUNCTYPE(c_int,c_void_p)
+IO_FUNCT_WRITE=CFUNCTYPE(c_int,c_void_p,c_int)
 
 def io_funct_r(reg):
 	print(reg,"read")
-	return c_int(12)
+	return 2
 def io_funct_w(reg,val):
 	print(reg,val)
+	return 0
 io_read=IO_FUNCT_READ(io_funct_r)
 io_write=IO_FUNCT_WRITE(io_funct_w)
 
@@ -145,4 +146,4 @@ if (__name__=="__main__"):
 
 	r.set_x_data_at(10,r.memlib.newIOFuncts(io_write,io_read))
 	r.read(10)
-	r.write(10,10)
+#r.write(10,10)
