@@ -2,6 +2,7 @@
 #define SFR_REG	1
 #define	OUT_REG	2
 #define STD_REG	3
+#define IO__REG	4
 
 
 struct _Register;
@@ -13,7 +14,7 @@ struct _Register
 	unsigned int name;
 	void ( * write)( Register *, int);
 	int ( * read )(Register *);
-	void * x_data; // xtra data, file FILE streams,...
+	void * x_data; // xtra data, FILE streams,...
 };
 
 //typedef struct _Register Register;
@@ -170,10 +171,48 @@ void Register_write(Register * reg,int val)
 	reg->write(reg,val);
 }
 
+/* for IO-registers I need special R/W functions */
+struct _IOFuncts
+{
+	void (* write)(Register * reg,int val);
+	int (* read)(Register * reg);
+};
+
+typedef struct _IOFuncts IOFuncts;
+
+IOFuncts * newIOFuncts(void (* write)(Register * reg,int val), int (* read)(Register * reg))
+{
+	IOFuncts * f=malloc(sizeof(IOFuncts));
+	f->write=write;
+	f->read=read;
+	return f;
+}
+
+void IORegister_write(Register * reg,int val)
+{
+	((IOFuncts * )reg->x_data)->write(reg,val);
+}
+int IORegister_read(Register * reg)
+{
+	return ((IOFuncts * )reg->x_data)->read(reg);
+}
+
+/* WARNING: after calling newIORegister you have to call IORegister_set_functs */
+Register * newIORegister(unsigned int name)
+{
+	return newRegister(name,IORegister_write,IORegister_read);
+}
+
+void IORegister_set_functs(Register * reg,IOFuncts * functs)
+{
+	reg->x_data=functs;
+}
+
+
 Register ** Registers_from_string(char * string)
 {
 	size_t size,i=0;
-	char * token=strsep(&string,"/");;
+	char * token=strsep(&string,"/");
 	char * str=malloc(sizeof(char)*20);
 	sscanf(token,"%zd/",&size);
 	Register ** regs=malloc(sizeof(Register * ) * size);
@@ -198,6 +237,10 @@ Register ** Registers_from_string(char * string)
 			case (STD_REG):
 				{
 					regs[i]=newStdRegister(nmbr);
+				}break;
+			case (IO__REG):
+				{
+					regs[i]=newIORegister(nmbr);
 				}break;
 			default:
 				{
@@ -286,6 +329,17 @@ void Ram_dump(Ram * ram,char * fname)
 	fclose(fout);
 	return;
 }
+
+
+void Ram_set_x_data_at(Ram * ram,unsigned int at, void * x_data)
+{
+	if(at>=ram->regs_count)
+	{
+		return;
+	}
+	ram->regs[at]->x_data=x_data;
+}
+
 struct _Flash;
 typedef struct _Flash Flash;
 

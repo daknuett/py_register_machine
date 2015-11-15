@@ -5,7 +5,18 @@ in addition to this some more object orientation.
 from ctypes import *
 import os,time,sys
 
-SFR_COMM=CFUNCTYPE(c_voidp)
+SFR_COMM=CFUNCTYPE(c_void_p)
+IO_FUNCT_READ=CFUNCTYPE(c_int,c_void_p)
+IO_FUNCT_WRITE=CFUNCTYPE(c_int,c_void_p,c_int)
+
+def io_funct_r(reg):
+	print(reg,"read")
+	return 2
+def io_funct_w(reg,val):
+	print(reg,val)
+	return 0
+io_read=IO_FUNCT_READ(io_funct_r)
+io_write=IO_FUNCT_WRITE(io_funct_w)
 
 class Register(object):
 	def __init__(self,nmbr,memlib_file_name,*args):
@@ -38,7 +49,7 @@ class SpecialFunctionRegister(Register):
 
 class Ram(object):
 	""""""
-	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;8,3,n;",register_count=10,memlib_file_name="./libmemory.so"):
+	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name="./libmemory.so"):
 		self.memlib=cdll.LoadLibrary(memlib_file_name)
 		self.size=size
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
@@ -96,6 +107,8 @@ class Ram(object):
 		if(nmbr>=self.reg_cnt):
 			return
 		self.write(nmbr,self.stack[nmbr].pop())
+	def set_x_data_at(self,at,x_data):
+		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at),x_data)
 
 def callback_exit():
 	print("exiting.")
@@ -132,5 +145,8 @@ class Flash(object):
 		return "< {0} object >:\n{2} {1}{3}".format(Flash.__qualname__,dumps,"{","}")
 
 if (__name__=="__main__"):
-	r=Ram(100)
+	r=Ram(100,registers="11/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;",register_count=11)
 
+	r.set_x_data_at(10,r.memlib.newIOFuncts(io_write,io_read))
+	r.read(10)
+#r.write(10,10)
