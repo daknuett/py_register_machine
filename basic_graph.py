@@ -65,7 +65,7 @@ class BasicGraphics(object):
 		self.memory.set_x_data_at(self.cursor_reg_nmbr,self.memory.memlib.newIOFuncts(c_set_cursor,c_get_cursor))
 		self.store_to_protect_against_garbage_collection.append(c_set_cursor)
 		self.store_to_protect_against_garbage_collection.append(c_get_cursor)
-		self.memory.add_SFR_callback(0x05,SFR_COMM(mainloop_exit))
+		self.memory.add_SFR_callback(0x06,SFR_COMM(mainloop_exit))
 
 def do_null(*args):
 	return 0

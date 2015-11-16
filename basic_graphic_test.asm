@@ -15,6 +15,6 @@ ldi 6f a
 ; done.
 
 ; start tk.mainloop
-ldi 05 3
+ldi 06 3
 
 ldi ff 3
