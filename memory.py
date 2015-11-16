@@ -55,6 +55,7 @@ class Ram(object):
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
 		self._repr=self.memlib.newRam(c_size_t(size),register_reprs,register_count)
 		self.callback_functs=[]
+		self.IO_functs=[]	# protection against the goddammed garbage collection
 		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
 		def hw_print_int():
 			print(self.read(0))
@@ -108,6 +109,7 @@ class Ram(object):
 			return
 		self.write(nmbr,self.stack[nmbr].pop())
 	def set_x_data_at(self,at,x_data):
+		self.IO_functs.append(x_data)
 		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at),x_data)
 
 def callback_exit():

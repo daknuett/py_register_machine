@@ -190,7 +190,13 @@ IOFuncts * newIOFuncts(void (* write)(Register * reg,int val), int (* read)(Regi
 
 void IORegister_write(Register * reg,int val)
 {
+	#ifdef DEBUG
+	printf("[%s]writing IO register %zd to %d\n",__FILE__,reg,val);
+	#endif
 	((IOFuncts * )reg->x_data)->write(reg,val);
+	#ifdef DEBUG
+	printf("[%s]writing IO register %zd done.\n",__FILE__,reg);
+	#endif
 }
 int IORegister_read(Register * reg)
 {
@@ -205,6 +211,7 @@ Register * newIORegister(unsigned int name)
 
 void IORegister_set_functs(Register * reg,IOFuncts * functs)
 {
+	//printf("setting IOfuncts of %zd to %zd\n",reg,functs);
 	reg->x_data=functs;
 }
 
@@ -333,6 +340,7 @@ void Ram_dump(Ram * ram,char * fname)
 
 void Ram_set_x_data_at(Ram * ram,unsigned int at, void * x_data)
 {
+	//printf("[%s] setting register %u .x_data to %zd\n",__FILE__,at,x_data);
 	if(at>=ram->regs_count)
 	{
 		return;
@@ -406,7 +414,7 @@ Flash * Flash_from_file(char * fname)
 	// reading unsigned as '%x' does not support +/-
 	unsigned int val;
 	null=fscanf(fin,"%zd\n",&size);
-	printf("reading size: %zd\n",size);
+	//printf("reading size: %zd\n",size);
 	Flash * f= malloc(sizeof(Flash));
 	f->mem=calloc(size,sizeof(unsigned int));
 	if(f->mem==NULL)

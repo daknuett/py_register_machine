@@ -43,7 +43,7 @@ class Processor(object):
 		else:
 			self.tb_commands=tb_commands
 		if(db_commands==None):
-			self.db_commands={0x6:"inc",0x7:"dec",0x8:"neg",0x12:"call",0x17:"pop",0x18:"push"}
+			self.db_commands={0x6:"inc",0x7:"dec",0x8:"neg",0x12:"call",0x17:"pop",0x18:"push",0x1b:"jmp"}
 		else:
 			self.db_commands=db_commands
 		if(sg_commands==None):

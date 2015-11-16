@@ -233,7 +233,8 @@ class Assembler(object):
 				else:
 					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
 			else:
-				raise SyntaxError("{0}: not an expression!".format(line))
+				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
+
 		for k,v in self.symbols.items():
 			if(v=="?"):
 				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
