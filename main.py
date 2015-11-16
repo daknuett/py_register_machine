@@ -15,7 +15,7 @@ if __name__=="__main__":
 		print("usage: {} <command> <argument>".format(sys.argv[0]))
 		raise BaseException("need command")
 	if(sys.argv[1]=="procdef"):
-		f=Flash(100)
+		f=Flash(1000)
 		p=Processor(ram=r,flash=f)
 		p.__dump__(sys.argv[2])
 		print("generated processor definition into file {}.".format(sys.argv[2]))
