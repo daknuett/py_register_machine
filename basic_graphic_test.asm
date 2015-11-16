@@ -4,15 +4,18 @@
 
 ; load a chr in the char register
 ; cursor is at 0
-; f
-ldi 66 a 
+ldi 'f' a 
 ; cursor now at 1
 inc b
-; o
-ldi 6f a
+ldi 'o' a
 inc b
-ldi 6f a
-; done.
+ldi 'o' a
+addi 2 b
+ldi 'H' a
+inc b
+ldi 'i' a
+inc b
+ldi '!' a
 
 ; start tk.mainloop
 ldi 06 3
