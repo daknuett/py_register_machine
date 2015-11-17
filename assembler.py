@@ -167,6 +167,7 @@ class Assembler(object):
 					except:
 						raise SemanticError("{0}: not a valid address!".format(cms[2]))
 				else:
+					_pass=False
 					try:
 						i=int(cms[2],16)
 					except:
@@ -175,7 +176,9 @@ class Assembler(object):
 								cms[2]=self.symbols[cms[2]]
 						else:
 							self.symbols[cms[2]]="?"
-					i=int(cms[2])
+						_pass=True
+					if(not _pass):
+						i=int(cms[2])
 					if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
 						raise SemanticError("{0}: not a valid address!".format(cms[2]))
 				try:
@@ -192,6 +195,7 @@ class Assembler(object):
 					raise SemanticError("command {0} wants 1 arg, but got {1}: {2}".format(cms[1],len(cms),line))
 				if(cms[0] in self.support_symbolic_names):
 					if(cms[1] in self.symbols):
+						
 						if(self.symbols[cms[1]]!="?"):
 							cms[1]=self.symbols[cms[1]]
 					else:
