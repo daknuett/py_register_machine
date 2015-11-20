@@ -50,11 +50,10 @@ class Processor(object):
 			self.sg_commands={0x9:"nop",0x11:"ret"}
 		else:
 			self.sg_commands=sg_commands
-		self.PC=0 # used to move over the memory
-		self.total_pc=0 # complete number of memory movements
-		self.loc=self.ram.size # the current ptr for __process__ placed at the beginning of the flash.
+		self.PC=self.ram.size # used to move over the memory, starting at first flash block
 		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp}
 		self.stack=[]
+		self.traceback=[]
 	def __dumps__(self):
 		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
 	def __dump__(self,fname):
@@ -203,12 +202,14 @@ class Processor(object):
 			_to=self.flash
 			_inout-=self.ram.size
 		_to.write(_inout,_to.read(_inout)*-1)
-	def __jmp__(self,ptr):
+	def __jmp__(self,ptr,static=False):
 		""" move the ptr to a new place """
-		oldloc=(self.loc,self.PC)
-		self.loc=ptr
-		self.total_pc+=self.PC
-		self.PC=0
+		oldloc=self.PC
+		if(static):
+			self.PC=ptr
+		else:
+			self.PC+=ptr # relative!!
+		self.traceback.append((oldloc,self.PC))
 		raise JMPException(str(oldloc))
 	def jmp(self,loc):
 		self.__jmp__(loc)
@@ -218,7 +219,7 @@ class Processor(object):
 			_from=self.flash
 			_in-=self.ram.size
 		self.__jmp__(_from.read(_in))
-	def pjne(self,_in,_to):
+	def pjne(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -236,7 +237,7 @@ class Processor(object):
 			_in-=self.ram.size
 		if(_from.read(_in)!=0):
 			self.__jmp__(_to)
-	def pjeq(self,_in,_to):
+	def pjeq(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -254,7 +255,7 @@ class Processor(object):
 			_in-=self.ram.size
 		if(_from.read(_in)==0):
 			self.__jmp__(_to)
-	def pjge(self,_in,_to):
+	def pjge(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -272,7 +273,7 @@ class Processor(object):
 			_in-=self.ram.size
 		if(_from.read(_in)>=0):
 			self.__jmp__(_to)
-	def pjle(self,_in,_to):
+	def pjle(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -290,7 +291,7 @@ class Processor(object):
 			_in-=self.ram.size
 		if(_from.read(_in)<=0):
 			self.__jmp__(_to)
-	def pjgt(self,_in,_to):
+	def pjgt(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -308,7 +309,7 @@ class Processor(object):
 			_in-=self.ram.size
 		if(_from.read(_in)>0):
 			self.__jmp__(_to)
-	def pjlt(self,_in,_to):
+	def pjlt(self,_in,_out):
 		_from=self.ram
 		if(_in>=self.ram.size):
 			_from=self.flash
@@ -389,15 +390,18 @@ class Processor(object):
 		pass
 
 	def call(self,ptr):
-		self.stack.append((self.loc,self.PC))
+		self.stack.append(self.PC)
 		self.__jmp__(ptr)
 	def ret(self):
-		old_loc,old_pc=self.stack.pop()
-		old_real_head=old_loc+old_pc
-		self.__jmp__(old_real_head+2)
+		old_pc=self.stack.pop()
+		# here we need static jumping! 
+		self.__jmp__(old_pc+2,static=True) # +2 args of call
 
 	def pop(self,reg):
-		self.ram.popr(reg)
+		try:
+			self.ram.popr(reg)
+		except IndexError:
+			raise SIGSEGV("Pop from empty stack! memory: {0} ( = {1} ) real: {2} ( = {3} ) traceback: {4}".format(hex(self.PC-self.ram.size),self.PC-self.ram.size,hex(self.PC),self.PC,self.traceback))
 	def push(self,reg):
 		self.ram.pushr(reg)
 
@@ -406,7 +410,7 @@ class Processor(object):
 			This is flash[0]."""
 		while(1):
 			try:
-				self.__process__(self.loc)
+				self.__process__(self.PC)
 			except SIGSEGV as e: # something  bad happened
 				self.ram.dump()
 				raise e
@@ -417,7 +421,6 @@ class Processor(object):
 
 
 	def __process__(self,ptr):
-		ptr+=self.PC
 		_ptr_loc=self.ram
 		real_addr=ptr
 		if(ptr>=self.ram.size):
@@ -426,13 +429,13 @@ class Processor(object):
 		com=_ptr_loc.read(ptr)
 		if(DEBUG):
 			try:
-				print(_ptr_loc.read(ptr),self.sg_commands[com])
+				print(ptr,_ptr_loc.read(ptr),self.sg_commands[com])
 			except:
 				try:
-					print(_ptr_loc.read(ptr),self.db_commands[com],_ptr_loc.read(ptr+1))
+					print(ptr,_ptr_loc.read(ptr),self.db_commands[com],_ptr_loc.read(ptr+1))
 				except:
 					try:
-						print(_ptr_loc.read(ptr),self.tb_commands[com],_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
+						print(ptr,_ptr_loc.read(ptr),self.tb_commands[com],_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
 					except:
 						pass
 		if(com in self.sg_commands):
@@ -447,7 +450,7 @@ class Processor(object):
 			self.stddef[self.tb_commands[com]](_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
 			self.PC+=3
 			return 3
-		raise SIGSEGV("invalid command ({0}) (memory: {1} (= {2} ) real addr: {3} (= {4} ))  (correct compiler?)".format(com,hex(ptr),ptr,hex(real_addr),real_addr))
+		raise SIGSEGV("invalid command ({0}) (memory: {1} (= {2} ) real addr: {3} (= {4} ))  (correct compiler?)\ntraceback: {5}".format(com,hex(ptr),ptr,hex(real_addr),real_addr,self.traceback))
 
 	
 

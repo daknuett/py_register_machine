@@ -22,8 +22,6 @@ movp r1 r0
 inc r0
 movp r3 r0
 call memcpy
-subi 1 15
-pjeq 15 r1
 
 ; done
 ldi ff SFR

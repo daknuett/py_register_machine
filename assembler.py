@@ -63,6 +63,8 @@ class Preprocessor(object):
 			for word in line.split():
 				if(word in self.symbols):
 					new_line.append(self.symbols[word])
+					if(DEBUG):
+						print("preprocessor: substituting {0} with {1}".format(word,self.symbols[word]))
 				else:
 					new_line.append(word)
 			line=" ".join(new_line)
@@ -104,7 +106,8 @@ class Assembler(object):
 		prepr.do_all()
 		self.f=open(fname+".pr","r")
 		self.lines=self.f.read().split("\n")
-		self.symbols={}
+		self.symbols={} # the addresses
+		self.symbol_refs={} # for relative addresses we need the current address
 		self.line_count=0
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
 		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
@@ -172,10 +175,10 @@ class Assembler(object):
 						i=int(cms[2],16)
 					except:
 						if(cms[2] in self.symbols):
-							if(self.symbols[cms[2]]!="?"):
-								cms[2]=self.symbols[cms[2]]
+							self.symbol_refs[cms[2]].append(self.line_count)
 						else:
 							self.symbols[cms[2]]="?"
+							self.symbol_refs[cms[2]]=[self.line_count]
 						_pass=True
 					if(not _pass):
 						i=int(cms[2])
@@ -195,14 +198,13 @@ class Assembler(object):
 					raise SemanticError("command {0} wants 1 arg, but got {1}: {2}".format(cms[1],len(cms),line))
 				if(cms[0] in self.support_symbolic_names):
 					if(cms[1] in self.symbols):
-						
-						if(self.symbols[cms[1]]!="?"):
-							cms[1]=self.symbols[cms[1]]
+						self.symbol_refs[cms[1]].append(self.line_count)
 					else:
 						try:
 							i=int(cms[1],16)
 						except:
 							self.symbols[cms[1]]="?"
+							self.symbol_refs[cms[1]]=[self.line_count]
 						try:
 							i=int(cms[1])
 							if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
@@ -242,6 +244,7 @@ class Assembler(object):
 						self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
 				else:
 					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
+					self.symbol_refs[cms[0][:-1]]=[]
 			else:
 				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
 
@@ -249,10 +252,24 @@ class Assembler(object):
 			if(v=="?"):
 				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
 		new_compiled=[]
+		it=0
+		if(DEBUG):
+			print("symbol references:",self.symbol_refs)
+			print("symbols:",self.symbols)
 		for line in compiled:
 			if(line in self.symbols):
-				line=self.symbols[line]
+				if(DEBUG):
+					print("{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
+				line=self.symbols[line]-((it)+self.processor.ram.size)
+				if(line<1): # took me about 3 h reading disassembly, to find this bug.
+					    # we have to skip the arguments +_+ 
+					if(DEBUG):
+						print("line smaller than 1, adding 2")
+					line += 2 
+				if(line>1): # and a few minutes for this
+					line += 1
 			new_compiled.append(line)
+			it+=1
 		for i in range(len(new_compiled)):
 			if(isinstance(new_compiled[i],int)):
 				self.processor.flash.write(i,new_compiled[i])

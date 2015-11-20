@@ -9,12 +9,9 @@ ldi 1 last
 mov until until_str
 fib.loop:
 mov curr swap
-mov swap 12
-addi 30 12
 add last curr
 mov swap last
 sub until_str swap
-mov swap 12
 jgt swap fib.loop
 mov curr 1
 pop 2
