@@ -109,7 +109,10 @@ class Assembler(object):
 		self.symbols={} # the addresses
 		self.symbol_refs={} # for relative addresses we need the current address
 		self.line_count=0
+		# symbolic names are dereferenced by the assembler
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
+		self.support_static_symbolic_names=["mov"]
+		self.static_symbols={}
 		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
 		self.commands={v:k for k,v in self.processor.tb_commands.items()}
 		self.commands.update({v:k for k,v in self.processor.db_commands.items()})
@@ -156,13 +159,15 @@ class Assembler(object):
 							print("  new line: {0}".format(" ".join(cms)))
 				try:
 					i=int(cms[1],16)
+					if(i>self.processor.ram.size+self.processor.flash.size or i<0):
+						if(cms[0] not in self.i_commands):
+							raise SemanticError("{0}: not a valid address!".format(cms[1]))
 				except :
-					raise SemanticError("{0}: not a valid address or number!".format(cms[1]))
-				i=int(cms[1],16)
-				if(i>self.processor.ram.size+self.processor.flash.size or i<0):
-					if(cms[0] not in self.i_commands):
-						raise SemanticError("{0}: not a valid address!".format(cms[1]))
-				if((not cms[0] in self.support_symbolic_names)):
+					if(cms[0] not in self.support_static_symbolic_names):
+						raise SemanticError("{0}: not a valid address or number!".format(cms[1]))
+					else:
+						pass
+				if((not cms[0] in self.support_symbolic_names)or cms[0] in self.support_static_symbolic_names):
 					try:
 						i=int(cms[2],16)
 						if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
@@ -174,11 +179,17 @@ class Assembler(object):
 					try:
 						i=int(cms[2],16)
 					except:
-						if(cms[2] in self.symbols):
-							self.symbol_refs[cms[2]].append((self.line_count,cms[0]))
+						if(cms[0] in self.support_symbolic_names):
+							if(cms[2] in self.symbols):
+								self.symbol_refs[cms[2]].append((self.line_count,cms[0]))
+							else:
+								self.symbols[cms[2]]="?"
+								self.symbol_refs[cms[2]]=[(self.line_count,cms[0])]
 						else:
-							self.symbols[cms[2]]="?"
-							self.symbol_refs[cms[2]]=[(self.line_count,cms[0])]
+							if(cms[2] in self.static_symbols):
+								pass
+							else:
+								self.static_symbols[cms[2]]="?"
 						_pass=True
 					if(not _pass):
 						i=int(cms[2])
@@ -234,6 +245,9 @@ class Assembler(object):
 				except KeyError:
 					raise SyntaxError("{0}: command not found!".format(cms[0]))
 				self.line_count+=1
+			# addressing of jump marks
+			#
+			#
 			elif(cms[0][-1]==":"):
 				if(DEBUG):
 					print("{1} compiling as symbol {0}".format(cms[0][:-1],self.line_count))
@@ -245,6 +259,17 @@ class Assembler(object):
 				else:
 					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
 					self.symbol_refs[cms[0][:-1]]=[]
+			# new: datasetting
+			# 
+			#
+			elif(cms[0]==".set"):
+				if(self.line_count==0):
+					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.line_count,line))
+				if(DEBUG):
+					print("{1} setting data (name: {0}) : {2}".format(cms[1],self.line_count,cms[2]))
+				compiled.append(cms[2])
+				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
+				self.line_count+=1
 			else:
 				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
 
@@ -261,6 +286,7 @@ class Assembler(object):
 		if(DEBUG):
 			print("symbol references:",self.symbol_refs)
 			print("symbols:",self.symbols)
+			print("static symbols:",self.static_symbols)
 		for line in compiled:
 			if(line in self.symbols):
 				orig=line # saving the  line for further operations
@@ -285,6 +311,10 @@ class Assembler(object):
 						else:
 							print(self.tb_commands,self.db_commands,caller[1])
 							print("Something creepy happened. I am ignoring it.")
+			if(line in self.static_symbols):
+				if(self.static_symbols[line]=="?"):
+					raise UnboundReferenceError("{0} not referenced!(static references: {1})".format(line,self.static_symbols))
+				line=self.static_symbols[line]
 			new_compiled.append(line)
 			it+=1
 		for i in range(len(new_compiled)):
