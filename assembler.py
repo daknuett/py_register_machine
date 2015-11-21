@@ -3,7 +3,7 @@ from processor import *
 import string
 
 STD_INC_PATH="./assemblys/"
-DEBUG=True
+DEBUG=False
 
 """ use an assembly file to programm the flash. """
 
@@ -267,43 +267,24 @@ class Assembler(object):
 				if(DEBUG):
 					print("{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
 				line=self.symbols[line]-((it)+self.processor.ram.size)
-				if(line<1): # took me about 3 h reading disassembly, to find this bug.
-					    # we have to skip the arguments +_+ 
+				 # took me about 3 h reading disassembly, to find this bug.
+				 # we have to skip the arguments +_+ 
+				callers=self.symbol_refs[orig]
+				for caller in callers:
 					if(DEBUG):
-						print("line smaller than 1, adding reference arg number")
-					callers=self.symbol_refs[orig]
-					for caller in callers:
-						if(DEBUG):
-							print(caller)
-						if(caller[0]+1==it or caller[0]+2==it):
-							if(caller[1] in self.tb_commands):
-								if(DEBUG):
-									print("{0} : needs 2 args: adding 2 to line".format(caller))
-								line += 2 
-							elif(caller[1] in self.db_commands):
-								if(DEBUG):
-									print("{0} : needs 1 arg: adding 1 to line".format(caller))
-								line += 1
-							else:
-								print(self.tb_commands,self.db_commands,caller[1])
-								print("Something creepy happened. I am ignoring it.")
-				if(line>1): # and a few minutes for this
-					callers=self.symbol_refs[orig]
-					for caller in callers:
-						if(DEBUG):
-							print(caller)
-						if(caller[0]+1==it or caller[0]+2==it):
-							if(caller[1] in self.tb_commands):
-								if(DEBUG):
-									print("{0} : needs 2 args: adding 2 to line".format(caller))
-								line += 2 
-							elif(caller[1] in self.db_commands):
-								if(DEBUG):
-									print("{0} : needs 1 arg: adding 1 to line".format(caller))
-								line += 1
-							else:
-								print(self.tb_commands,self.db_commands,caller[1])
-								print("Something creepy happened. I am ignoring it.")
+						print(caller)
+					if(caller[0]+1==it or caller[0]+2==it):
+						if(caller[1] in self.tb_commands):
+							if(DEBUG):
+								print("{0} : needs 2 args: adding 2 to line".format(caller))
+							line += 2 
+						elif(caller[1] in self.db_commands):
+							if(DEBUG):
+								print("{0} : needs 1 arg: adding 1 to line".format(caller))
+							line += 1
+						else:
+							print(self.tb_commands,self.db_commands,caller[1])
+							print("Something creepy happened. I am ignoring it.")
 			new_compiled.append(line)
 			it+=1
 		for i in range(len(new_compiled)):
