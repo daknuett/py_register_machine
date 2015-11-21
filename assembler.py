@@ -3,7 +3,7 @@ from processor import *
 import string
 
 STD_INC_PATH="./assemblys/"
-DEBUG=False
+DEBUG=True
 
 """ use an assembly file to programm the flash. """
 
@@ -175,10 +175,10 @@ class Assembler(object):
 						i=int(cms[2],16)
 					except:
 						if(cms[2] in self.symbols):
-							self.symbol_refs[cms[2]].append(self.line_count)
+							self.symbol_refs[cms[2]].append((self.line_count,cms[0]))
 						else:
 							self.symbols[cms[2]]="?"
-							self.symbol_refs[cms[2]]=[self.line_count]
+							self.symbol_refs[cms[2]]=[(self.line_count,cms[0])]
 						_pass=True
 					if(not _pass):
 						i=int(cms[2])
@@ -198,13 +198,13 @@ class Assembler(object):
 					raise SemanticError("command {0} wants 1 arg, but got {1}: {2}".format(cms[1],len(cms),line))
 				if(cms[0] in self.support_symbolic_names):
 					if(cms[1] in self.symbols):
-						self.symbol_refs[cms[1]].append(self.line_count)
+						self.symbol_refs[cms[1]].append((self.line_count,cms[0]))
 					else:
 						try:
 							i=int(cms[1],16)
 						except:
 							self.symbols[cms[1]]="?"
-							self.symbol_refs[cms[1]]=[self.line_count]
+							self.symbol_refs[cms[1]]=[(self.line_count,cms[0])] # for correct handling of relative addresses
 						try:
 							i=int(cms[1])
 							if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
@@ -248,6 +248,11 @@ class Assembler(object):
 			else:
 				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
 
+		# DONE with syntax and mnemonic parsing
+		# NOW: generating the references
+		#
+		#
+		#
 		for k,v in self.symbols.items():
 			if(v=="?"):
 				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
@@ -258,16 +263,47 @@ class Assembler(object):
 			print("symbols:",self.symbols)
 		for line in compiled:
 			if(line in self.symbols):
+				orig=line # saving the  line for further operations
 				if(DEBUG):
 					print("{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
 				line=self.symbols[line]-((it)+self.processor.ram.size)
 				if(line<1): # took me about 3 h reading disassembly, to find this bug.
 					    # we have to skip the arguments +_+ 
 					if(DEBUG):
-						print("line smaller than 1, adding 2")
-					line += 2 
+						print("line smaller than 1, adding reference arg number")
+					callers=self.symbol_refs[orig]
+					for caller in callers:
+						if(DEBUG):
+							print(caller)
+						if(caller[0]+1==it or caller[0]+2==it):
+							if(caller[1] in self.tb_commands):
+								if(DEBUG):
+									print("{0} : needs 2 args: adding 2 to line".format(caller))
+								line += 2 
+							elif(caller[1] in self.db_commands):
+								if(DEBUG):
+									print("{0} : needs 1 arg: adding 1 to line".format(caller))
+								line += 1
+							else:
+								print(self.tb_commands,self.db_commands,caller[1])
+								print("Something creepy happened. I am ignoring it.")
 				if(line>1): # and a few minutes for this
-					line += 1
+					callers=self.symbol_refs[orig]
+					for caller in callers:
+						if(DEBUG):
+							print(caller)
+						if(caller[0]+1==it or caller[0]+2==it):
+							if(caller[1] in self.tb_commands):
+								if(DEBUG):
+									print("{0} : needs 2 args: adding 2 to line".format(caller))
+								line += 2 
+							elif(caller[1] in self.db_commands):
+								if(DEBUG):
+									print("{0} : needs 1 arg: adding 1 to line".format(caller))
+								line += 1
+							else:
+								print(self.tb_commands,self.db_commands,caller[1])
+								print("Something creepy happened. I am ignoring it.")
 			new_compiled.append(line)
 			it+=1
 		for i in range(len(new_compiled)):
