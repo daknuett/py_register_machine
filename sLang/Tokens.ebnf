@@ -16,7 +16,7 @@ BIN_OPERATOR	= "+" | "-" | "*" | "/" | "&" | "^" | "|" | "<" |">" | "==";
 UN_OPERATOR	= "++" | "--";
 ASSIGN_OPERATOR	= "=" | "+=" | "-=" | "/=" | "*=";
 NUMBER	= digit {digit};
-CHAR	= (* normal letters and digits with escape sequences and _   practically everything*);
+CHAR	= '[\x00- \xff ]';
 NAME	= CHAR {CHAR};
 
 digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
