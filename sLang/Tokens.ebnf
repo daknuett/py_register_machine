@@ -1,0 +1,21 @@
+FUNCTION	= "function";
+IF	= "if";
+ELSE	= "else";
+WHILE	= "while";
+RETURN	= "return";
+BLOCK_OPEN	= "{";
+BLOCK_CLOSE	= "}";
+BRACKET_OPEN	= "(";
+BRACKET_CLOSE	= ")";
+KOMMA	= ",";
+SEMICOLON	= ";";
+DATATYPE	= "int" | "char" | "ptr";
+VOID	= "void";
+BIN_OPERATOR	= "+" | "-" | "*" | "/" | "&" | "^" | "|" | "<" |">" | "==";
+UN_OPERATOR	= "++" | "--";
+ASSIGN_OPERATOR	= "=" | "+=" | "-=" | "/=" | "*=";
+NUMBER	= digit {digit};
+NAME	= char {char};
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+char = (* KLAR *);
