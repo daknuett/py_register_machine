@@ -33,7 +33,7 @@ include them using the __#include__ statement.
 Predefined routines can be included using the __#import__ statement.
 This means, that no linking and/or memory rearrangement is supported,
 but you are _welcome_ to add a better compiler/assembler/linker.
-The commands __push__ or __st__ or __ld__ are not yet implemented.
+The commands  __st__ or __ld__ are not yet implemented.
 
 The engine is not designed for a fix usage, but for expansion 
 _from the user_, so no assembly directive definition is made,
