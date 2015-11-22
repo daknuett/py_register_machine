@@ -14,7 +14,8 @@ DATATYPE	= "int" | "char" | "ptr";
 VOID	= "void";
 BIN_OPERATOR	= "+" | "-" | "*" | "/" | "&" | "^" | "|" | "<" |">" | "==";
 UN_OPERATOR	= "++" | "--";
-ASSIGN_OPERATOR	= "=" | "+=" | "-=" | "/=" | "*=";
+ASSIGN_OPERATOR = "=";
+SHORT_ASSIGN_OPERATOR	= "+=" | "-=" | "/=" | "*=";
 NUMBER	= digit {digit};
 NAME	= char {char};
 
