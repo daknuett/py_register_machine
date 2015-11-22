@@ -1,0 +1,32 @@
+(* startvariable ist program  *)
+program = function {variable}  {function} ;
+function = "function " datatype name "(" [ datatype name {"," datatype name} ] ")" block;
+datatype = "int"|"char"|"ptr";
+
+variable = datatype name [ [ operator ] "="  arithmethicExpression] ";"
+
+name = chr | chr specialChr name | chr name;
+
+chr = "A"|...|"z";
+specialChr = "_";
+
+int = nmbr| nmbr int;
+nmbr = "0"|...|"9";
+
+operator = "+"|"-"|"*"|"/"|"&"|"^"|"|";
+
+block = indent (statement|block);
+statement = strucure | ( [ datatype ] name [operator] "=" ( arithmethicExpression | expression )  ) ";" | expression ";" | "return"[ " " name ]";" ;
+
+arithmethicExpression = ( name | int | expression ) [ term ];
+
+term = operator ( name | int | expression ) [ term ];
+
+strucure = ( "while(" (arithmethicExpression|expression) ")" block ) | ( "if(" (arithmethicExpression|expression) ")" block [ "else" block ] );
+
+(* zb i++; *)
+
+expression = (name ("++"|"--") )| functioncall ;
+functioncall = name "(" [name { "," name}] ")";
+
+
