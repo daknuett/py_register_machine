@@ -1,4 +1,4 @@
-/* startfunktion */
+/* startfunction */
 function void start()
 {
 	int f=45;
