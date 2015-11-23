@@ -15,7 +15,8 @@ nmbr = "0"|...|"9";
 
 operator = "+"|"-"|"*"|"/"|"&"|"^"|"|";
 
-block = indent (statement|block);
+block = "{" [ blockContent ] "}";
+blockContent = [blockContent] (statement|block);
 statement = strucure | ( [ datatype ] name [operator] "=" ( arithmethicExpression | expression )  ) ";" | expression ";" | "return"[ " " name ]";" ;
 
 arithmethicExpression = ( name | int | expression ) [ term ];

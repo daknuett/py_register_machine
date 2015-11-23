@@ -111,7 +111,7 @@ class Assembler(object):
 		self.line_count=0
 		# symbolic names are dereferenced by the assembler
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
-		self.support_static_symbolic_names=["mov"]
+		self.support_static_symbolic_names=["mov","ldi"]
 		self.static_symbols={}
 		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
 		self.commands={v:k for k,v in self.processor.tb_commands.items()}
@@ -157,6 +157,10 @@ class Assembler(object):
 						cms[2]=cms[2][1:cms[2].index(")")]
 						if(DEBUG):
 							print("  new line: {0}".format(" ".join(cms)))
+				#
+				# TODO: seperated methods for this.
+				# very hard to understand due bad coding :-(
+				#
 				try:
 					i=int(cms[1],16)
 					if(i>self.processor.ram.size+self.processor.flash.size or i<0):
@@ -260,13 +264,16 @@ class Assembler(object):
 					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
 					self.symbol_refs[cms[0][:-1]]=[]
 			# new: datasetting
-			# 
+			# TODO: update wiki
 			#
 			elif(cms[0]==".set"):
 				if(self.line_count==0):
 					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.line_count,line))
 				if(DEBUG):
 					print("{1} setting data (name: {0}) : {2}".format(cms[1],self.line_count,cms[2]))
+				# for characters
+				if(cms[2][0]=="'"):
+					cms[2]=ord(cms[2][1:2])
 				compiled.append(cms[2])
 				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
 				self.line_count+=1
