@@ -3,7 +3,7 @@ from processor import *
 import string
 
 STD_INC_PATH="./assemblys/"
-DEBUG=False
+DEBUG=True
 
 """ use an assembly file to programm the flash. """
 
@@ -277,6 +277,28 @@ class Assembler(object):
 				compiled.append(cms[2])
 				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
 				self.line_count+=1
+			# new: strings
+			# usage: .string <name> "string"
+			# will add a null terminated in the flash and add a reference to the first char
+			# use it like a c string with pointer arithmethic.
+			elif(cms[0]==".string"):
+				if(self.line_count==0):
+					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.line_count,line))
+				_str=" ".join(cms[2:])[1:-1] # strip ""
+				strlen=len(_str)+1 # null
+				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
+				if(DEBUG):
+					print("{1} setting string (name: {0}) : {2}".format(cms[1],self.line_count,_str))
+				i=0
+				while( i < len(_str)):
+					compiled.append(ord(_str[i]))
+					if(DEBUG):
+						print("adding string literal ",compiled[-1])
+					i+=1
+				compiled.append(0)
+				self.line_count+=strlen
+
+				
 			else:
 				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
 
