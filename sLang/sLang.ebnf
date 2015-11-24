@@ -21,7 +21,6 @@ functioncall = NAME BRACKET_OPEN [{expression COMMA} expression] BRACKET_CLOSE;
 assignment = ((variableDeclaration ASSIGN_OPERATOR) | (NAME (ASSIGN_OPERATOR | SHORT_ASSIGN_OPERATOR) expression;
 
 unOpExpression = NAME UN_OPERATOR;
-expression = [BRACKET_OPEN] (functioncall | arithmeticExpression) [BRACKET_CLOSE];
-arithmeticExpression = (unOpExpression | NAME | NUMBER | expression | character) [BIN_OPERATOR expression];
+expression = [BRACKET_OPEN] (functioncall | unOpExpression | NAME | NUMBER | expression | character) [BIN_OPERATOR expression] [BRACKET_CLOSE];
 
 character = APOSTROPHE NAME APOSTROPHE;
