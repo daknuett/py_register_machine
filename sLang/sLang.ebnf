@@ -1,21 +1,22 @@
 program = function {variable} {function};
 
-variable = variableDeklaration [ASSIGN_OPERATOR expression] SEMICOLON;
+variable = variableDeclaration [ASSIGN_OPERATOR expression] SEMICOLON;
 function = FUNCTION (DATATYPE | VOID) NAME BRACKET_OPEN [{DATATYPE NAME COMMA} DATATYPE NAME] BRACKET_CLOSE block;
 
-variableDeklaration = DATATYPE NAME;
+variableDeclaration = DATATYPE NAME;
 
 block = BLOCK_OPEN {statement} BLOCK_CLOSE;
 
-statement = [block | structure | ((expressionStatement | RETURN)] SEMICOLON;
+statement = [block | structure] | [(expressionStatement | RETURN | variableDeclaration) SEMICOLON];
 expressionStatement = functioncall | assignment | unOpExpression;
 
 structure = whileStruct | ifStruct;
 whileStruct = WHILE BRACKET_OPEN expression BRACKET_CLOSE statement;
 ifStruct = IF BRACKET_OPEN expression BRACKET_CLOSE statement [ELSE statement];
 
+functioncall = NAME BRACKET_OPEN [{expression COMMA} expression] BRACKET_CLOSE;
 
-assignment = ((variableDeklaration ASSIGN_OPERATOR) | (NAME (ASSIGN_OPERATOR | SHORT_ASSIGN_OPERATOR) expression;
+assignment = ((variableDeclaration ASSIGN_OPERATOR) | (NAME (ASSIGN_OPERATOR | SHORT_ASSIGN_OPERATOR) expression;
 
 unOpExpression = NAME UN_OPERATOR;
 expression = [BRACKET_OPEN] (functioncall | arithmeticExpression) [BRACKET_CLOSE];
