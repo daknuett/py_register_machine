@@ -10,7 +10,7 @@ block = BLOCK_OPEN {statement} BLOCK_CLOSE;
 statement = [block | structure] | [(expressionStatement | return | variableDeclaration) SEMICOLON];
 expressionStatement = functioncall | assignment | unOpExpression;
 
-return = RETURN expression;
+return = RETURN [expression];
 
 structure = whileStruct | ifStruct;
 whileStruct = WHILE BRACKET_OPEN expression BRACKET_CLOSE statement;
