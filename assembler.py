@@ -3,7 +3,7 @@ from processor import *
 import string
 
 STD_INC_PATH="./assemblys/"
-DEBUG=True
+DEBUG=False
 
 """ use an assembly file to programm the flash. """
 
@@ -168,16 +168,20 @@ class Assembler(object):
 							raise SemanticError("{0}: not a valid address!".format(cms[1]))
 				except :
 					if(cms[0] not in self.support_static_symbolic_names):
+						print(cms[0])
 						raise SemanticError("{0}: not a valid address or number!".format(cms[1]))
 					else:
 						pass
-				if((not cms[0] in self.support_symbolic_names)or cms[0] in self.support_static_symbolic_names):
+				if((not cms[0] in self.support_symbolic_names) or ( cms[0] in self.support_static_symbolic_names)):
 					try:
 						i=int(cms[2],16)
 						if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
 							raise ValueError()
 					except:
-						raise SemanticError("{0}: not a valid address!".format(cms[2]))
+						if(cms[0] in self.support_static_symbolic_names):
+							pass
+						else:
+							raise SemanticError("{0}: not a valid address!".format(cms[2]))
 				else:
 					_pass=False
 					try:
