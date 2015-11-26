@@ -7,6 +7,9 @@ call fib
 mov 1 r0
 ldi 04 SFR
 
+mov r0 1d4
+fdump
+
 ldi ff SFR
 
 .set test_byte 15

@@ -47,11 +47,11 @@ class Processor(object):
 		else:
 			self.db_commands=db_commands
 		if(sg_commands==None):
-			self.sg_commands={0x9:"nop",0x11:"ret"}
+			self.sg_commands={0x9:"nop",0x11:"ret",0x24:"fdump"}
 		else:
 			self.sg_commands=sg_commands
 		self.PC=self.ram.size # used to move over the memory, starting at first flash block
-		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp}
+		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp,"fdump":self.fdump}
 		self.stack=[]
 		self.traceback=[]
 	def __dumps__(self):
@@ -402,6 +402,10 @@ class Processor(object):
 			self.ram.popr(reg)
 		except IndexError:
 			raise SIGSEGV("Pop from empty stack! memory: {0} ( = {1} ) real: {2} ( = {3} ) traceback: {4}".format(hex(self.PC-self.ram.size),self.PC-self.ram.size,hex(self.PC),self.PC,self.traceback))
+	# for savings
+	#
+	def fdump(self):
+		self.flash.dump()
 	def push(self,reg):
 		self.ram.pushr(reg)
 
