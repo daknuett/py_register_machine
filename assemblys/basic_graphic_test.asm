@@ -5,20 +5,25 @@
 
 ; load a chr in the char register
 ; cursor is at 0
-ldi 'f' LCD_chr 
-; cursor now at 1
-inc LCD_cur
-ldi 'o' LCD_chr
-inc LCD_cur
-ldi 'o' LCD_chr
-addi 2 LCD_cur
-ldi 'H' LCD_chr
-inc LCD_cur
-ldi 'i' LCD_chr
-inc LCD_cur
-ldi '!' LCD_chr
 
+ldi mystr r0
+call putstr
+inc LCD_cur
 ; start tk.mainloop
 ldi 06 SFR
 
-ldi ff SFR
+putstr:
+push r1
+putstr_loop:
+pmov r0 r1
+mov r1 LCD_chr
+inc LCD_cur
+inc r0
+jne r1 putstr_loop
+pop r1
+ret
+
+
+.string mystr "Hi, this is py register machine. "
+
+

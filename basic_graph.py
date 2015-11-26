@@ -11,7 +11,7 @@ class BasicGraphics(object):
 		self.root=None
 		self.canvas=None
 		self.cursor=0
-		self.max_per_line=40
+		self.max_per_line=60
 		self.max_lines=15
 		self.chr_reg_nmbr=chr_reg_nmbr
 		self.cursor_reg_nmbr=cursor_reg_nmbr
@@ -35,7 +35,7 @@ class BasicGraphics(object):
 			self.displayed_lines=[]
 			lineno=1
 			for line in self.current_display:
-				self.displayed_lines.append(self.canvas.create_text(self.align_l,lineno*self.h_diff*(self.cursor //10 +1 ),text=line,fill="white",anchor="nw"))
+				self.displayed_lines.append(self.canvas.create_text(self.align_l,lineno*self.h_diff*(self.cursor//self.max_per_line +1 ),text=line,fill="white",anchor="nw"))
 				lineno+=1
 			self.canvas.update()
 		def set_cursor(reg,cursor):
@@ -43,8 +43,8 @@ class BasicGraphics(object):
 			return 0
 		def putc(reg,char):
 			pos=self.cursor
-			h=pos//10
-			w=pos%51
+			h=pos//self.max_per_line
+			w=pos%self.max_per_line
 			ch=char
 			self.current_display[h]=self.current_display[h][0:w]+chr(ch)+self.current_display[h][w+1:]
 			display_lines()
