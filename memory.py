@@ -9,6 +9,9 @@ SFR_COMM=CFUNCTYPE(c_void_p)
 IO_FUNCT_READ=CFUNCTYPE(c_int,c_void_p)
 IO_FUNCT_WRITE=CFUNCTYPE(c_int,c_void_p,c_int)
 
+# for testing
+#
+
 def io_funct_r(reg):
 	print(reg,"read")
 	return 2
@@ -17,6 +20,11 @@ def io_funct_w(reg,val):
 	return 0
 io_read=IO_FUNCT_READ(io_funct_r)
 io_write=IO_FUNCT_WRITE(io_funct_w)
+
+
+class HaltException(BaseException):
+	def __init__(self,*args):
+		BaseException.__init__(self,*args)
 
 class Register(object):
 	def __init__(self,nmbr,memlib_file_name,*args):
@@ -63,6 +71,13 @@ class Ram(object):
 			self.dump()
 		self.add_SFR_callback(0x04,SFR_COMM(hw_print_int))
 		self.add_SFR_callback(0x05,SFR_COMM(ram_dump))
+		# for halt without sys.exit:
+		self.nexttime_halt=False
+		def __halt_cpu(*args):
+			self.nexttime_halt=True
+		halt_cpu=SFR_COMM(__halt_cpu)
+		# halt the cpu
+		self.add_SFR_callback(0xfe,halt_cpu)
 
 		# we need the number of registers
 		indx=registers.index("/")
@@ -71,8 +86,12 @@ class Ram(object):
 		self.stack=[ [] for i in range(self.reg_cnt)]
 
 	def read(self,_iter):
+		if(self.nexttime_halt):
+			raise HaltException()
 		return c_int(self.memlib.Ram_read(self._repr,c_size_t(_iter))).value
 	def write(self,_iter,value):
+		if(self.nexttime_halt):
+			raise HaltException()
 		self.memlib.Ram_write(self._repr,c_size_t(_iter),value)
 
 	def add_SFR_callback(self,operation_number,callback):
@@ -100,11 +119,21 @@ class Ram(object):
 		else:
 			fname=fname.encode("ascii")
 		self.memlib.Ram_dump(self._repr,fname)
+	def dumps(self):
+		name=str(time.time())
+		self.dump(name)
+		s=open(name).read()
+		os.unlink(name)
+		return s
 	def pushr(self,nmbr):
+		if(self.nexttime_halt):
+			raise HaltException()
 		if(nmbr>=self.reg_cnt):
 			return
 		self.stack[nmbr].append(self.read(nmbr))
 	def popr(self,nmbr):
+		if(self.nexttime_halt):
+			raise HaltException()
 		if(nmbr>=self.reg_cnt):
 			return
 		self.write(nmbr,self.stack[nmbr].pop())
@@ -137,6 +166,12 @@ class Flash(object):
 			self.__dump__(self.std_savename)
 		else:
 			self.__dump__(fname.encode("ascii"))
+	def dumps(self):
+		name=str(time.time())
+		self.dump(name)
+		s=open(name).read()
+		os.unlink(name)
+		return 	s
 	def __str__(self):
 		fname=str(time.time()).encode("ascii")
 		self.__dump__(fname)

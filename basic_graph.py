@@ -6,9 +6,9 @@ from processor import *
 import sys
 
 class BasicGraphics(object):
-	def __init__(self,memory,chr_reg_nmbr,cursor_reg_nmbr):
+	def __init__(self,memory,chr_reg_nmbr,cursor_reg_nmbr,root=None,using_in_gui=False):
 		self.memory=memory
-		self.root=None
+		self.root=root
 		self.canvas=None
 		self.cursor=0
 		self.max_per_line=60
@@ -21,9 +21,11 @@ class BasicGraphics(object):
 		self.h_diff=15
 		self.store_to_protect_against_garbage_collection=[]
 		def start_x():
-			self.root=tk.Tk()
+			if(root==None):
+				self.root=tk.Tk()
 			self.canvas=tk.Canvas(self.root,bg="black")
-			self.canvas.pack()
+			if(not using_in_gui):
+				self.canvas.pack()
 			for line in self.current_display:
 				self.displayed_lines.append(self.canvas.create_text(self.align_l,self.h_diff*(self.cursor //10 +1 ),text=line,fill="white",anchor="nw"))
 			self.canvas.delete("all")

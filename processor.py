@@ -420,6 +420,8 @@ class Processor(object):
 				raise e
 			except JMPException:
 				continue
+			except HaltException: # to hat the processor without sys.exit
+				break
 
 
 
