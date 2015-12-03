@@ -37,20 +37,30 @@ class RegisterGui(Frame):
 		self.l5.grid(row=2,column=1,padx=10)
 		self.processor=processor
 
-		self.lcd_gui=BasicGraphics(processor.ram,11,12,root=self.master,using_in_gui=True)
+		self.lcd_gui=BasicGraphics(processor.ram,10,11,root=self.master,using_in_gui=True)
 		self.lcd=self.lcd_gui.canvas
 		self.lcd.grid(row=3,column=1)
+
+		self.step_button=Button(self.master,text="do step",command=self.do_step)
+		self.step_button.grid(row=2,column=0)
 	def refresh_ram(self):
-		self.ram_text.delete(INSERT,END)
+		self.ram_text.delete("1.0",END)
 		self.ram_text.insert(INSERT,self.processor.ram.dumps())
 	def refresh_flash(self):
-		self.flash_text.delete(INSERT,END)
-		self.flash_text.insert(INSERT,self.processor.flash.dumps())
+		self.flash_text.delete("1.0",END)
+		flash_text=self.processor.flash.dumps()
+		self.flash_text.insert(INSERT,flash_text[flash_text.index("\n"):])
+	def do_step(self):
+		try:
+			self.processor.__process__(self.processor.PC)
+		except JMPException:
+			pass
+		self.refresh_flash()
+		self.refresh_ram()
 
 if __name__=="__main__":
-	r=Ram(100,registers="12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",register_count=12)
-	f=Flash(200,saved=True,std_savename=b"basic_graphics.flash")
+	r=Ram(400,registers="12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",register_count=12)
+	f=Flash(1000,saved=True,std_savename=b"basic_graphics.flash")
 	p=Processor(r,f)
 	r=RegisterGui(p,master=Tk(className="py register machine"))
-	r.refresh_flash()
 	mainloop()
