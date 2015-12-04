@@ -1,11 +1,15 @@
 from memory import *
 from processor import *
 from basic_graph import *
+from assembler import *
 
 from tkinter import *
+from tkinter.messagebox import *
 
 class RegisterGui(Frame):
 	def __init__(self,processor,master=None,*args):
+		self.show_debug=True
+		self.exec_start_point=processor.PC # for resetting the processor.
 		Frame.__init__(self,master)
 		self.l1=Label(self.master,text="Operations")
 		self.l2=Label(self.master,text="Assembly")
@@ -43,6 +47,18 @@ class RegisterGui(Frame):
 
 		self.step_button=Button(self.master,text="do step",command=self.do_step)
 		self.step_button.grid(row=2,column=0)
+		self.file_label=Label(self.master,text="Filename")
+		self.file_name=Entry(self.master)
+		self.file_save_button=Button(self.master,text="Save File", command=self.save_file)
+		self.file_load_button=Button(self.master,text="Load File",command=self.load_file)
+		self.assemble_help_label=Label(self.master,text="Save the file, assemble it and program the current flash")
+		self.assemble_button=Button(self.master,text="Assemble File",command=self.assemble_file)
+		self.file_label.grid(row=4,column=0)
+		self.file_name.grid(row=5,column=0)
+		self.file_save_button.grid(row=6,column=0)
+		self.file_load_button.grid(row=7,column=0)
+		self.assemble_help_label.grid(row=8,column=0)
+		self.assemble_button.grid(row=9,column=0)
 	def refresh_ram(self):
 		self.ram_text.delete("1.0",END)
 		self.ram_text.insert(INSERT,self.processor.ram.dumps())
@@ -55,8 +71,57 @@ class RegisterGui(Frame):
 			self.processor.__process__(self.processor.PC)
 		except JMPException:
 			pass
+		except HaltException:
+			showwarning("sGui","Execution reached halt point.")
+			self.processor.PC=self.exec_start_point
+			self.processor.ram.nexttime_halt=False
+			self.lcd_gui.reset()
+			return
 		self.refresh_flash()
 		self.refresh_ram()
+	def save_file(self):
+		name=self.file_name.get()
+		if(name==""):
+			showwarning("sGui","Need filename!")
+		_file=open(name,"w")
+		text=self.asm_text.get("1.0",END)
+		_file.write(text)
+		_file.close()
+	def load_file(self):
+		name=self.file_name.get()
+		if(name==""):
+			showwarning("sGui","Need filename!")
+		text=""
+		try:
+			_file=open(name,"r")
+			text=_file.read()
+			_file.close()
+		except:
+			showwarning("sGui","File does not exits. loading empty string")
+		self.asm_text.delete("1.0",END)
+		self.asm_text.insert(INSERT,text)
+	def assemble_file(self):
+		name=self.file_name.get()
+		self.save_file()
+		p=Preprocessor(name)
+		try:
+			p.do_all()
+		except BaseException as e:
+			showwarning("sGui",str(e))
+			return
+		asm=Assembler(self.processor,name+".pr")
+		try:
+			total,used=asm.compile()
+			if(used>total):
+				raise BaseException("Error: program flash too small")
+		except BaseException as e:
+			showwarning("sGui",str(e))
+			return
+		if(self.show_debug):
+			showwarning("sGui","assembling successfull\n{} of {} blocks used: {} %".format(used,total,(used/total)*100))
+		os.system("rm -f "+name+"\.pr*")	
+
+
 
 if __name__=="__main__":
 	r=Ram(400,registers="12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",register_count=12)

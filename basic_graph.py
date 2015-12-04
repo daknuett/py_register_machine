@@ -68,6 +68,8 @@ class BasicGraphics(object):
 		self.store_to_protect_against_garbage_collection.append(c_set_cursor)
 		self.store_to_protect_against_garbage_collection.append(c_get_cursor)
 		self.memory.add_SFR_callback(0x06,SFR_COMM(mainloop_exit))
+	def reset(self):
+		self.current_display=[" "*self.max_per_line for x in range(self.max_lines)]
 
 def do_null(*args):
 	return 0
