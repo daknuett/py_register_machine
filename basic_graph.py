@@ -73,6 +73,8 @@ class BasicGraphics(object):
 
 def do_null(*args):
 	return 0
+# TEST
+
 if __name__=="__main__":
 	r=Ram(100,registers="12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",register_count=12)
 	b=BasicGraphics(r,10,11)

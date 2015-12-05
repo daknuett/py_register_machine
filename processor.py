@@ -5,7 +5,7 @@ from memory import *
 
 DEFAULT_RAM_S=160
 DEFAULT_FLASH_S=360
-DEBUG=True
+DEBUG=False
 
 class SIGSEGV(BaseException):
 	def __init__(self,*args):

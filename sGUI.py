@@ -11,11 +11,11 @@ class RegisterGui(Frame):
 		self.show_debug=True
 		self.exec_start_point=processor.PC # for resetting the processor.
 		Frame.__init__(self,master)
-		self.l1=Label(self.master,text="Operations")
-		self.l2=Label(self.master,text="Assembly")
-		self.l3=Label(self.master,text="Ram")
-		self.l4=Label(self.master,text="Flash")
-		self.l1.grid(row=0,column=0,padx=40)
+		self.l1=Label(self.master,text="Operations",font="bold")
+		self.l2=Label(self.master,text="Assembly",font="bold")
+		self.l3=Label(self.master,text="Ram",font="bold")
+		self.l4=Label(self.master,text="Flash",font="bold")
+		self.l1.grid(row=0,column=0,padx=0)
 		self.l2.grid(row=0,column=1,padx=40)
 		self.l3.grid(row=0,column=3,padx=40)
 		self.l4.grid(row=0,column=5,padx=40)
@@ -77,6 +77,9 @@ class RegisterGui(Frame):
 			self.processor.ram.nexttime_halt=False
 			self.lcd_gui.reset()
 			return
+		except BaseException as e:
+			showwarning("sGui",str(e))
+			return
 		self.refresh_flash()
 		self.refresh_ram()
 	def save_file(self):
@@ -125,7 +128,7 @@ class RegisterGui(Frame):
 
 if __name__=="__main__":
 	r=Ram(400,registers="12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",register_count=12)
-	f=Flash(1000,saved=True,std_savename=b"basic_graphics.flash")
+	f=Flash(1000)
 	p=Processor(r,f)
 	r=RegisterGui(p,master=Tk(className="py register machine"))
 	mainloop()
