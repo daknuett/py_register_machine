@@ -268,7 +268,6 @@ class Assembler(object):
 					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
 					self.symbol_refs[cms[0][:-1]]=[]
 			# new: datasetting
-			# TODO: update wiki
 			#
 			elif(cms[0]==".set"):
 				if(self.line_count==0):
