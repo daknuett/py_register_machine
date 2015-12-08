@@ -20,6 +20,8 @@
 \maketitle
 \tableofcontents
 
+\part{Arbeiten mit der Py Register Machine}
+
 \chapter{Arbeitsumgebung}
 
 \section{Start}
@@ -169,6 +171,26 @@ ldi 04 SFR
 ldi fe SFR
 \end{lstlisting}
 
+\section{Direkte Werte}
+
+Wer das Programm von oben abgewandelt hat und beispielsweise \textit{ldi 10 r1} genutzt hat, wird sich vielleicht wundern, wieso das Ergebnis der Rechnung nicht \textit{15}, sondern \textit{21} ist. Das liegt daran, dass alle normal eingegebenen direkten Werte als hexadecimal interpretiert werden.
+
+Wer nicht immer im Kopf von decimal nach hexadecimal umrechnen will, kann das mit einer interaktiven Pythonshell machen:
+
+\begin{lstlisting}
+>>> hex(20)
+'0x14'
+>>> int("20",16)
+32
+\end{lstlisting}
+
+Wer Characterwerte nutzen will, z.B. um Buchstaben auszugeben, kann den Buchstaben in Hochkomma setzen( \textit{'F'} ).
+
+\section{Zum Basteln}
+
+Schreibe ein Assemblerprogramm, das drei Werte multipliziert und dann ausgibt.   
+(Hinweis: mit \textit{mov} kann man Werte copieren und verschieben)
+
 \chapter{Kontrollstrukturen}
 
 \section{Sprungaddressen}
@@ -223,5 +245,136 @@ ret
 
 Wenn man bei \textit{jmp addieren} (oder bei call) die andere Sprungmarke einsetzt, wird entsprechend der andere Block ausgeführt.
 
+\subsection{Zum Basteln}
 
+Erstelle ein Programm, das drei Werte nimmt und diese zuerst addiert und ausgibt, danach subtrahiert und ausgibt und schließlich multipliziert und ausgibt.
+
+(Hinweis: vorrausdenkende Registerbelegung ist wichtig und \textit{mov} ist mit Sicherheit nützlich)
+
+\section{Bedingtes Springen}
+
+Wenn man nur unbedingt Springen kann, ist das nicht sehr hilfreich. Deshalb gibt es einige bedingte Sprungbefehle ( kein bedingtes \textit{call} ). 
+
+Die vollständige Liste ist wieder auf \url{https://github.com/daknuett/py_register_machine/wiki/Assembly-Directives-and-Mnemonics }.
+
+Die Anwendung ist ganz einfach: \textit{$<$bedingter sprungbefehl$>$ $<$bedingung$>$ $<$sprungaddresse$>$}, dabei ist die Bedingung eine Speicherstelle, die mit \textit{0} verglichen wird.
+
+\begin{lstlisting}[frame=single]
+#include<stddef.inc>
+ldi 1 r0
+
+jne r0 nicht_null
+jeq r0 schon_null
+
+nicht_null:
+ldi 5 r0
+ldi 04 SFR
+jmp ende
+
+schon_null:
+ldi 3 r0
+ldi 04 SFR
+jmp ende
+
+ende:
+ldi fe SFR
+\end{lstlisting}
+
+Wenn also $r0 == 0$ wahr ist, wird nach \textit{schon\_null} gesprungen und eben anders herum.
+
+Dadurch kann man leicht Schleifen implementieren:
+
+\begin{lstlisting}[frame=single]
+#include<stddef.inc>
+
+ldi 5 r0
+; 5 iterationen
+
+schleife:
+ldi 04 SFR
+; dec erniedrigt eine Speicherzelle
+dec r0
+; groesser als 0
+jgt r0 schleife
+; jetzt schleife zu ende
+ldi fe SFR
+\end{lstlisting}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% Anhang %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\part{Anhang}
+
+\chapter{Lösungen}
+\section{Erste Schritte}
+
+Um drei Werte zu multiplizieren muss man sie zuerst laden, und dann nacheinander multplizieren:
+
+\begin{lstlisting}[frame=single]
+#include<stddef.inc>
+ldi 5 r0
+ldi 5 r1
+ldi 5 r2
+
+mul r2 r1
+; ergebnis r2 * r1 in r1
+mul r1 r0
+
+ldi 04 SFR
+ldi fe SFR
+\end{lstlisting}
+
+Mit \textit{mov}:
+
+\begin{lstlisting}[frame=single]
+#include<stddef.inc>
+ldi 5 r0
+ldi 5 r1
+ldi 5 r2
+
+mul r0 r1
+mul r1 r2
+; ergebnis jetzt in r2
+mov r2 r0
+
+ldi 04 SFR
+ldi fe SFR
+\end{lstlisting}
+
+\section{Sprungaddressen}
+
+Am besten ist die Implementation mit \textit{call}.Wenn man in \textit{r0} und \textit{r1} rechnet, kann man die Werte beispielsweise in \textit{r2} und \textit{r3} speichern:
+
+\begin{lstlisting}[frame=single]
+#include<stddef.inc>
+ldi 5 r2
+ldi 6 r3
+call addieren
+call subtrahieren
+call multiplizieren
+ldi fe SFR
+
+addieren:
+mov r2 r0
+mov r3 r1
+add r1 r0
+ldi 04 SFR
+ret
+
+subtrahieren:
+mov r2 r0
+mov r3 r1
+sub r1 r0
+ldi 04 SFR
+ret
+
+multiplizieren:
+mov r2 r0
+mov r3 r1
+mul r1 r0
+ldi 04 SFR
+ret
+\end{lstlisting}
 \end{document}
