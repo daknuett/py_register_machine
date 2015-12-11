@@ -9,6 +9,23 @@
 	\usepackage{geometry}
 	\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
 	\usepackage{listings}
+	\usepackage{color}
+	\definecolor{mygray}{rgb}{0.4,0.4,0.4}
+	\definecolor{mygreen}{rgb}{0,0.8,0.6}
+	\definecolor{myorange}{rgb}{1.0,0.4,0}
+	\lstset {
+			basicstyle=\footnotesize\sffamily\color{black},
+			commentstyle=\color{mygray},
+			frame=single,
+			numbers=left,
+			numbersep=5pt,
+			numberstyle=\tiny\color{mygray},
+			keywordstyle=\color{mygreen},
+			showspaces=false,
+			showstringspaces=false,
+			stringstyle=\color{myorange},
+			tabsize=2
+	}
 
 \title{ Assemblerprogrammierung auf der Py Register Machine \[basics 01\]}
 \author{Daniel Knüttel}
