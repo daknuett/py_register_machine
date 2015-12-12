@@ -122,6 +122,48 @@ Wenn der Befehlsspeicher einen getrennten Addressbereich hat, ist die Breite des
 
 $$ \mathrm{|Z_{Befehlszaehler}|} = |Flash|  $$
 
+\section{Automaten}
+
+Da die Registermaschine ein \textit{Deterministischer Endlicher Automat} ( \textit{DEA} )\footnote{im Englischen \textit{DFA Deterministic Finite Automaton}} ist, kann ein Registermaschinenentwurf theoretisch durch die Definition eines Automaten beschrieben werden:
+
+$$ A = ( Z , \Sigma , \delta , S , E ) $$
+
+Dabei ist $A$ der Automat, $Z$ ist die Menge der Zustände, $\Sigma$ sein Eingabealphabet ( respektive sein Befehlssatz ), 
+$\delta$ die Menge aller Transitionen, $S$ der Startzustand und $E$ die Menge der Endzustände, die in $Z$ enthalten sind.
+
+$\delta$ ergibt sich aus $\Sigma$ und $Z$, da immer $ ( z x \sigma ) \rightarrow z $. Wichtig ist hierbei, dass $|Z| \neq \infty$,
+da sonst kein endlicher Automat entstehen kann.
+
+Bei einer Registermaschine muss davon ausgegangen werden, dass $ E = Z $\footnote{außer man muss einen Registerwert setzen, um die Maschine zu stoppen}, daraus wird erkenntlich, dass eine derartige Notation schnell ihren Sinn verliert, da $ |\delta| = |\Sigma| * | Z | $.
+Bei nur 10 Registern mit einer Breite von 64 bit und 5 Befehlen mit zwei Argumenten (die nur Register sein dürfen)\footnote{eigentlich besteht jedes Element von $\Sigma$ aus dem Befehl und den Argumenten} ergibt sich 
+$$ |\delta| = |\Sigma| * |Z| = |\Sigma| * (10 * 2^{63}) = (5 * 10 * 10) * (10 * 2^{63}) \approx  4,612*10^{22} $$ \footnote{Wichtig ist hier die Berechnung mit ausreichend breiten Prozessoren, auf 32 bit könnte es knapp werden.}
+
+Besonders interessant ist der Umstand, dass man \textbf{alle} Automatentypen ineinander umwandeln kann: eine \textit{Registermaschine} kann einen \textit{Kellerautomaten} emulieren, ein \textit{Kellerautomat} kann einen \textit{Turingautomaten} simulieren und ein \textit{Turingautomat} kann eine \textit{Registermaschine} emulieren. Das ist ein wichtiger Grundsatz: ein \textit{DEA} muss von einem \textit{Turingautomaten} umgesetzt werden können\footnote{dadurch kann er von jedem anderen Automaten umgesetzt werden und diesen Umsetzen}.
+
+Wichtig ist immer das \textbf{Prinzip}: Registermaschinen können groß sein\footnote{Beleg erforderlich\footnote{... kann man mit Py Register Machine wohl leicht nachweisen.}}, eine Umsetzung in einen Turingautomaten oder die Notation als 5er Tupel muss nur \textit{möglich} sein, nicht durchgeführt werden.
+
+\chapter{Anwendungen}
+
+\section{Theoretische Informatik}
+
+Eine Registermaschine ist ein beliebes Mittel, um zu zeigen, dass eine Prozedur\footnote{damit ist nicht eine Pascal-procedure gemeint.} deterministisch ist: lässt sie sich in einer Registermaschine umsetzen, so ist sie deterministisch\footnote{aber nicht umbedingt terminiert.}.
+
+Ein einfaches Beispiel ist die Fibonacci-Reihe, sie ist so definiert:
+
+$$ fib(n) := fib(n-1) + fib(n-2)$$
+$$ fib(1) := 1 $$
+$$ fib(0) := 0 $$
+$$ n \in \mathbb{N}_0 $$
+
+sie ist sogar beides: deterministisch und terminiert ( für $ n \neq \infty $ ) und kann in einer Registermaschine leicht umgesetzt werden.
+
+Damit ist bewiesen, dass die Fibonacci-Reihe deterministisch ist.
+
+\section{Lernhilfsmittel}
+
+Eine Registermaschine kann (wenn sie entsprechend nah an realen Prozessoren ist) zum Erlernen von maschinennahem Programmieren genutzt werden.
+Zudem kann sie genutzt werden, um anderes maschinennahes Programmieren zu lernen, wie Hochsprachenentwickung und Ähnliches.
+
 \chapter{Entwürfe}
 
 \section{Grundstrukturen}
