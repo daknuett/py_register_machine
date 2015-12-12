@@ -1,0 +1,160 @@
+\documentclass[a4paper,12pt,oneside]{scrreprt}
+	\usepackage[utf8]{inputenc}
+	\usepackage{graphicx}
+	\usepackage{amssymb}
+	\usepackage{setspace}
+	\usepackage{amsmath}
+	\usepackage{hyperref}
+	\onehalfspacing % das ist der 1,5 zeilige abstand!!!
+	\usepackage{geometry}
+	\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+	\usepackage{listings}
+	\usepackage{color}
+	\definecolor{mygray}{rgb}{0.4,0.4,0.4}
+	\definecolor{mygreen}{rgb}{0,0.8,0.6}
+	\definecolor{myorange}{rgb}{1.0,0.4,0}
+	\lstset {
+			basicstyle=\footnotesize\sffamily\color{black},
+			commentstyle=\color{mygray},
+			frame=single,
+			numbers=left,
+			numbersep=5pt,
+			numberstyle=\tiny\color{mygray},
+			keywordstyle=\color{mygreen},
+			showspaces=false,
+			showstringspaces=false,
+			stringstyle=\color{myorange},
+			tabsize=2
+	}
+
+\title{ Registermaschinenentwurf Py Register Machine \[design02\]}
+\author{Daniel Knüttel}
+\date{11.12.2015}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\chapter{Abstract}
+
+Die konkrete Fortführung von \textit{Registermaschinenentwurf Py Register Machine - design01}, in diesem Dokument stehen Konkrete Entwürfe im Vordergrund.
+
+\part{Registermaschinenentwurf Py Register Machine}
+
+\chapter{Sprachauswahl}
+
+Die Wahl bei der Sprache fiel nicht zufällig\footnote{naja, nicht nur...} auf \textit{python3} und \textit{c}. Es sprechen einige Gründe für diese Sprachen.
+
+\section{Python3}
+
+Wieso es nicht \textit{pyhton2} geworden ist, ist klar: \textit{python3} ist einfach das aktuellere.
+
+Ich wollte beim Entwurf allerdings auf einige wichtige Dinge Wert legen:
+
+\begin{description}
+\item[Generische Module] Alle Module, ins besondere der Prozessor sollten generisch sein. Ein weit verbreiteter Makel 
+ist, dass eine Registermaschine nicht generisch ist, sondern fix. Diesen Makel wollte ich von Beginn an ausmerzen.
+Das ermöglicht ein breites Anwendungsfeld, von der einfachen Algorithmenprüfung bis zur Hochsprachenentwicklung.
+
+\item[Lesbarkeit] Aller Code, besonders die wirklich interessanten Teile, sollten gut lesbar sein\footnote{hat auch nicht überall hingehauen}. Python bietet einfach die Möglichkeit lesbaren Code mit dem Schwerpunkt auf den interessanten Abschnitten zu produzieren.
+
+\item[Gute Erweiterbarkeit] Möglichst jeder soll in der Lage sein die Maschine zu modifizieren und auf seine Bedürfnisse zu zu schneiden, bei Python ist dieses Ziel leicht erreichbar.
+\end{description}
+
+Diese Punkte sind natürlich für jeden Entwurf wichtig, auch weitere Zusatzprogramme solten dies erfüllen.
+
+\section{C}
+
+Ein Problem bei Python ist die in designs01 erwähnte variable Größe des Ganzzahltypen. Um dieses Problem zu umgehen, bindet das Programm eine geteilte Bibliothek ein\footnote{Der verhindernde Punkt für DOSse}, die in c geschrieben ist.
+Auch diese Bibliothek ist schon Objektorientiert und erlaubt Vererbungsartige Strukturen.
+
+Der Vorteil von c besteht darin, dass es hervorragend von Python eingebunden werden kann und auch noch sehr lesbar ist.
+
+\chapter{Implementationsreihenfolge}
+
+Die Reihenfolge bei der Implementation ist essenziell, denn anders als z.T. dargestellt ist nicht die Verarbeitung der Daten essenziell, sondern deren Speicherung.  
+Wie schon in design01 erwähnt, ist eine Registermaschine ein sich selbstverändernder Speicher, deshalb steht zuerst die Implementation der Speicher im Vordergrund.  
+Hierbei liegen im Fall der Py Register Machine alle Speicher im selben Addressbereich, Lesen und Schreiben ist auf alle Speicherformen möglich.
+
+Erst danach können Prozessor und Rechenwerk implementiert werden, dabei kommen, um einen generischen Prozessor zu ermöglichen $map$s zum Einsatz. Im Konstruktor können dem Prozessor die Befehle übergeben werden.
+
+Dabei wird unterschieden, wie viele Argumente ein Befehl benötigt, da für jedes Argument eine eigene Speicherzelle genutzt wird.\footnote{Beispiel: \ref{sec:processor_init}}
+
+\chapter{Speicherorganisation}
+
+\section{Befehlsspeicher}
+
+Die Py Register Machine nutzt eine etwas ausgefallenere Befehlsspeicherungsmethode: 
+
+\begin{description}
+\item[Argumenttrennung] Jedes Argument wird in einer eigenen Speicherzelle abgelegt.
+Das ermöglicht einen theoretischen Umfang an $ 2^{63} = 9.22 \cdot 10^{18} $ Befehlen, sowie eine
+Direktaddressierung von ebenfalls $ 9.22 \cdot 10^{18} $ Zellen. In der Praxis wird dies allerdings kaum genutzt.
+
+\item[variable Blockzahl] Jeder Befehl mit den Argumenten kann eine eigene Zahl an Blöcken nutzen, für den Befehl ein Block, sowie für jedes Argument ein Block. Dadurch wird eine effizientere Speichernutzung möglich, allerdings verkompliziert es das Befehlszählerverhalten und den Aufbau des Assemblers.
+\end{description}
+
+Da Debugging durch dieses Verhalten verkompliziert wird, verfügt der Prozessor über ein eigenes Disassembly System.
+
+Ein Beispiel für das Verhalten ist hier: \ref{sec:befehlsspeicher_nutzung}.
+
+\section{Addressräume}
+
+Um ein möglichst breites Spektrum an Anwendungsmöglichkeiten abzudecken wurden alle Speicherformen in einen Adressraum gelegt,
+dabei nehmen die Register die untersten Addressen ein ( $ 0 \rightarrow |M_{register}| - 1 $, $ M_{register}  $ ist die Menge der Register ), darüber liegt der RAM
+( $ |M_{register}| \rightarrow |M_{register}| + |M_{ram}| - 1 $ ) und wieder darüber liegt der Befehlsspeicher 
+( $ |M_{register}| + |M_{ram}| \rightarrow |M_{register}| + |M_{ram}| + |M_{befehle}| - 1 $ ).
+
+Dabei ergibt sich bei 10 Registern, 20 Blöcken Speicher und einem Befehlsspeicher von 200 Blöcken:
+
+$$ A_{start}(register) = 0 $$
+wobei A die Addresse ist
+$$ A_{end}(register) = |M_{register}| -1 = 9 $$
+$$ A_{start}(ram) = |M_{register}| = 10 $$
+$$ A_{end}(ram) = |M_{register}| + |M_{ram}| -1 = 29 $$
+$$ A_{start}(befehle) = |M_{register}| + |M_{ram}| = 30 $$
+$$ A_{end}(befehle) = |M_{register}| + |M_{ram}| + |M_{befehle}| - 1 = 229 $$
+
+\part{Anhang}
+
+\chapter{Ergänzungen}
+\section{Initialisierung des Prozessors}
+\label{sec:processor_init}
+Bei der Initialisierung können dem Prozessor die Befehle übergeben werden:
+
+\begin{lstlisting}[language=Python]
+p=Processor(tb_commands={0x1:"mov",0x2:"add",0x3:"sub",
+		0x4:"ldi",0x05:"jgt"},
+		db_commands={0x06:"jmp"},
+		sg_commands={})
+# sehr geringer Befehlssatz, z.B. fuer 
+# Implementation von Arithmethischen Ausdruecken
+\end{lstlisting}
+
+\section{Befehlsspeichernutzung}
+\label{sec:befehlsspeicher_nutzung}
+
+Ein Beispiel füd die variable Befehlsspeichernutzung.
+
+\begin{lstlisting}
+
+0	5
+1	5
+2	0			 		ldi 5 0 ; 3 Speicherzellen
+3	5
+4	4
+5	3					ldi 4 3 ; 3 Speicherzellen
+6	7
+7	0					dec 0 ; 2 Speicherzellen
+8	a
+9	0
+a	fffffffb			jgt 0 fffffffb ; 3 Speicherzellen; fffffffb = -7
+b	5
+c	ff
+d	3					ldi ff 3 ; 3 Speicherzellen
+
+\end{lstlisting}
+\end{document}
+
