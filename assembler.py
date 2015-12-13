@@ -136,9 +136,21 @@ class Assembler(object):
 			# support preassembled arithmetics
 			#TODO: update wiki
 			if(len(cms)>=2 and cms[1][0]=="["):
+				if(DEBUG):
+					print(cms)
+					print(line)
+				cms[0]=cms[0]
+				cms[1]=line[line.index("["):line.index("]")+1]
+				cms[2]=line[line.index("]")+1:]
+				cms=cms[:3]
+				line=line[line.index("]")+1:]
+				if(DEBUG):
+					print(cms)
 				cms[1]=hex(eval(cms[1][1:-1]))[2:]
 			if(len(cms)>=3 and cms[2][0]=="["):
+				cms[2]=line[line.index("["):line.index("]")+1]
 				cms[2]=hex(eval(cms[2][1:-1]))[2:]
+				cms=cms[:3]
 
 			if(cms[0] in self.tb_commands):
 				if(DEBUG):
