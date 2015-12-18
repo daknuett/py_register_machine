@@ -1,0 +1,427 @@
+\documentclass[a4paper,12pt,oneside]{scrreprt}
+	\usepackage[utf8]{inputenc}
+	\usepackage{graphicx}
+	\usepackage{amssymb}
+	\usepackage{setspace}
+	\usepackage{amsmath}
+	\usepackage{hyperref}
+	\onehalfspacing % das ist der 1,5 zeilige abstand!!!
+	\usepackage{geometry}
+	\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+	\usepackage{listings}
+	\usepackage{color}
+	\definecolor{mygray}{rgb}{0.4,0.4,0.4}
+	\definecolor{mygreen}{rgb}{0,0.8,0.6}
+	\definecolor{myorange}{rgb}{1.0,0.4,0}
+	\lstset {
+			basicstyle=\footnotesize\sffamily\color{black},
+			commentstyle=\color{mygray},
+			frame=single,
+			numbers=left,
+			numbersep=5pt,
+			numberstyle=\tiny\color{mygray},
+			keywordstyle=\color{mygreen},
+			showspaces=false,
+			showstringspaces=false,
+			stringstyle=\color{myorange},
+			tabsize=2
+	}
+
+\title{ Assemblerprogrammierung auf der Py Register Machine \[basics 02\]}
+\author{Daniel Knüttel}
+\date{07.12.2015}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\chapter{Abstract}
+
+Nachdem im Dokument Assemblerprogrammierung auf der \textit{ Py Register Machine - basics01} der Einstieg in die Assemblerprogrammierung auf 
+der Py Register Machine gezeigt wurde, sollen nun die Besonderheiten und Features vermittelt werden.
+
+Zudem wird eine große Menge an Aufgaben mitgebracht, die weitere Grundkentnisse vermitteln sollen.
+
+\part{Arbeiten mit der Py Register Machine}
+
+\chapter{Anpassen der Engine}
+
+\section{Befehlssatz anpassen}
+
+Die Anpassung des Befehlssatzes ist bei der Py Register Machine besonders vereinfacht worden.
+
+\subsection{Methodik}
+
+Die Anpassung des Befehlssatzes erfolgt bei der Py Register Machine bei der Erzeugung der Prozessors:
+
+Man kann dem Prozessor mehrere Maps mit den entsprechenden Befehlen übergeben, dabei wird immer ein \textit{ Opcode} ( \textit{int}) einem \textit{Namen} ( \textit{str}) zugewiesen. 
+Dabei ist zu unterscheiden, wie viele Argumente ein Befehl benötigt\footnote{Das liegt an der Speichernutzung, siehe dazu \textit{ design02}}.
+
+\begin{lstlisting}[language=python]
+# aus main.py
+
+r=Ram(400)
+f=Flash(1000)
+p=Processor(ram=r,flash=f)
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=python]
+
+# angepasst
+r=Ram(400)
+f=Flash(1000)
+# Brozessor kennt nur Befehle mov,ldi,add,sub,mul,inc
+p=Processor(ram=r,flash=f,tb_commands=
+		{0x1:"mov",0x2:"ldi",
+		0x3:"add",0x4:"sub",
+		0x5:"mul"},
+		sg_commands=
+		{0x6:"inc"},
+		db_commands={}
+		)
+
+\end{lstlisting}
+
+Deshalb muss für jeden virtuellen Prozessor eine Prozessordefinition generiert werden.
+Diese Prozessordefinition besteht aus der Größe von Ram und Flash, sowie dem Befehlssatz.
+Erst dadurch kann ein Programm für den Prozessor assembliert werden.
+
+\subsection{Anwendung}
+
+Es gibt eine breite Palette an Anwendungen für solche Anpassungen solche Anpassungen:
+
+\begin{description}
+
+\item[Variable Aufgabenstellung] Bei unterschiedlichen Aufgabenstellungen kann es nötig sein einen unterschiedlichen Befehlssatz zu nutzen.
+Dadurch kann ein breites Spektrum an Aufgabentypen abgedeckt werden.
+
+\item[Variable Beweisführung] Da eine Registermaschine oft zur Beweisführung dient, um Algorithmen zu testen, ist es oft sinnvoll 
+einen dem Einsatz entsprechened Befehlssatz zu nutzen.
+
+\item[Kompabilität] Wenn neue Befehle und Funktionen zur Engine hinzugefügt werden, kann sich der Befehlssatz ändern.
+Indem man den Befehlssatz manuell ändert kann man Probleme verhindern.
+
+\end{description}
+
+\section{Speichergröße}
+
+Da unterschiedliche Anwendungsbereiche unterschiedlich große Befehls- und Hauptspeichergrößen erfordern, 
+kann auch diese angepasst werden.
+
+Als Anwendungsgebiete sind unter anderem optimiertes Programmieren ( wenig Speicher ) und Hochsprachen ( viel Speicher )
+zu nennen. Da auch Ein- und Ausgabe über Register ( = Speicherstellen) geregelt wird, muss bei neuen Anwendungen und
+Erweiterungen  das Hauptspeicher- und Registerlayout verändert werden.
+
+\subsection{Befehlsspeichergröße}
+
+Die Größe wird dem Befehlsspeicher im Konstruktor übergeben. Das erlaubt eine sehr einfache Anpassung.
+
+\begin{lstlisting}[language=python]
+# Befehlsspeichergroesse 300 Bloecke
+f=Flash(300)
+# oder 5*10**3 Bloecke
+f=Flash(5000)
+\end{lstlisting}
+
+\subsection{Hauptspeichergröße}
+
+Beim Hauptspeicher wird ebenfalls die Größe im Konstruktor angegeben.
+
+\textbf{Wichtig} ist allerdings, dass die Register bei dieser Größe mit enthalten sind:
+bei einer Hauptspeichergröße von 10 Blöcken und 10 Registern muss deshalb im Konstruktor \textbf{20} angegeben werden.
+
+\begin{lstlisting}[language=python]
+# Ram mit 10 Bloecken und 10 Registern
+# Register werden hier noch nicht uebergeben
+
+r=Ram(20,register_count=10)
+
+# nur 10 Register, kein "echter" Ram
+r=Ram(10,register_count=10)
+\end{lstlisting}
+
+\subsection{Registerlayout}
+
+Das Registerlayout, also die Anzahl, sowie die Art der Register werden bei der Konstruktion der Hauptspeichers mit angegeben.
+Dabei werden die Register als eine Stringrepräsentation\footnote{eine Art CSV-Dialekt} angegeben.
+
+Die Stringrepräsentation ist so aufgebaut:
+$$ <stringrepr> = "<register zahl>/<registerbeschreibung>;\{<registerbeschreibung>\}" $$
+$$ <registerbeschreibung> = <registerindex>,<registertyp>,<extra info> $$
+Dabei ist $ 0 <= registerindex < registerzahl $. Registertyp ist eine Ganzzahl, die den Typ beschreibt(\ref{tab:regtypes}).
+Der Teil \textit{extra info} wird abhängig vom Registertyp genuntzt, bei Standardregistern beispielsweise wird er 
+ignoriert, bei Outputregistern ist er der Name der Datei, in die geschrieben wird.
+
+\begin{table}[]
+\centering
+\caption{Registertypen}
+\label{tab:regtypes}
+\begin{tabular}{|l|l|}
+\hline
+ Typ & Beschreibung \\ \hline
+ 3 & Standardregister \\ \hline
+ 1 & Specialfunctionregister \\ \hline
+ 2 & Outputregister \\ \hline
+ 4 & Input-/Outputregister \\ \hline
+\end{tabular}
+\end{table}
+
+Dadurch kann man relativ einfach das Registerlayout ändern:
+
+\begin{lstlisting}[language=python]
+# Standardlayout
+r=Ram(400,
+	registers=
+	"12/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n; \\
+	4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;10,4,n;11,4,n;",
+	register_count=12)
+
+# weniger Register
+r=Ram(400,
+	registers=
+	"9/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;",
+	register_count=9)
+
+\end{lstlisting}
+
+\chapter{Aufgaben}
+
+Einige dieser Aufgaben wurden an das Schulbuch für Informatik in Bayern\footnote{ Informatik Lehrwerk für Gymnasien 5 (Klett Verlag 2010) } angelehnt.
+
+\section{Einfache Aufgaben}
+
+\subsection{Arithmetic}
+
+Schreiben Sie ein Programm, das die Werte $ 0x04, 0xf4,  0x26 $ in Register lädt und miteinander zuerst Addiert und dann Multipliziert.
+Lösung: \ref{sub:arith}.
+
+\subsection{Umweltverschmutzung}
+
+Man kann aus dem $CO_2$ Ausstoß pro Liter Treibstoff, dem Kraftstoffverbrauch und der zurückgelegten Strecke den Gesamtausstoß an $CO_2$ berechen.
+
+Gehen Sie von einem $CO_2$ Ausstoß von $ 2650 \frac{g}{l} $ (Diesel), einem Verbrauch von $ 5 \frac{l}{km} $ und einer Strecke von $ 300 km $ aus.
+
+Schreiben Sie ein Programm, in dem der Gesamtausstoß berechnet wird.
+Lösung: \ref{sub:umwelt}.
+
+\subsection{Disassembly}
+
+Man kann Maschinencode mithilfe eines Disassemblers in Assermbly zurückführen. Dieses Assembly ist natürlich nicht gut lesbar.
+Anwenudung findet dies unter anderem, bei Patches für nicht quelloffene Programme.
+
+Interpretieren Sie das folgende Stück "Disassembly" und versuchen Sie herauszufinden, was es tut. Suchen sie eine Anwendung.
+
+\begin{lstlisting}
+#include<stddef.inc>
+ldi 4 r0
+mov r0 20
+ldi 5 r0
+mov r0 21
+ldi 7 r0
+mov r0 22
+call LFB0
+call LFB1
+ldi ff SFR
+LFB0:
+mov 20 r0
+mov 21 r1
+mul r1 r0
+mov 22 r1
+mul r1 r0
+ldi 04 SFR
+ret
+LFB1:
+mov 20 r0
+mov 21 r1
+mul r1 r0
+ldi 2 r1
+mul r1 r0
+mov r1 r4
+mov 20 r0
+mov 22 r1
+mul r1 r0
+ldi 2 r1
+mul r1 r0
+add r0 r4
+mov 21 r0
+mov 22 r1
+mul r1 r0
+ldi 2 r1
+mul r1 r0
+add r4 r0
+ldi 04 SFR
+ret
+
+\end{lstlisting}
+
+Lösung: \ref{sub:disas}.
+
+\section{Kontrollstrukturen}
+
+\subsection{Fibonacci}
+
+Die Fibonacci-Reihe ist eine der beliebtesten Zahlenreihen im Universum der Informatiker. Sie lässt sich so definieren:
+
+$$ fib_n := fib_{n-1} + fib_{n-2} $$
+$$ fib_0 := 0 $$
+$$ fib_1 := 1 $$
+
+Da eine rekursive Implementation ( die durch diese Schreibweise nahegelegt wird) sehr ineffizent ist, kann man sie vorteilhaft
+iterativ implementieren. Der folgende Python3 code zeigt die Struktur:
+
+\begin{lstlisting}[language=python]
+
+def fib (n):
+	""" bis  naechst groesseren 
+		Fibonacci-Zahl berechnen 
+		und ausgeben """
+	fib=0
+	last=1
+	while(fib<n):
+		print( fib)
+		swp=fib
+		fib+=last
+		last=swp
+	return fib
+
+\end{lstlisting}
+
+Implementieren Sie einen vergleichbaren Algorithmus.
+
+Lösung: \ref{sub:fib}
+
+\part{Anhang}
+
+\chapter{Lösungen}
+
+\section{Einfache Aufgaben}
+
+\subsection{Arithmetic}
+\label{sub:arith}
+
+\begin{lstlisting}
+#include<stddef.inc>
+; werte laden
+
+ldi 04 r2
+ldi f4 r3
+ldi 26 r4
+
+addieren:
+mov r2 r0
+add r3 r0
+add r4 r0
+ldi 04 SFR
+
+multiplizieren:
+mov r2 r0
+mul r3 r0
+mul r4 r0
+ldi 04 SFR
+
+; fertig
+ldi ff SFR
+
+\end{lstlisting}
+
+\subsection{Umweltverschmutzung}
+\label{sub:umwelt}
+
+\begin{lstlisting}
+#include<stddef.inc>
+
+; werte laden und in RAM schieben
+
+ldi a5a r0
+mov r0 20
+; 0x20 = 32
+
+ldi 5 r0
+mov r0 21
+
+ldi 12c r0
+mov r0 22
+
+; laden fertig
+; gesamt volumen diesel berechnen
+
+mov 21 r0
+mov 22 r1
+
+mul r0 r1
+
+; g pro l laden und einrechnen
+
+mov 20 r0
+mul r0 r1
+
+; ausgeben
+mov r1 r0
+ldi 04 SFR
+; fertig
+ldi ff SFR
+
+\end{lstlisting}
+
+\subsection{Disassembly}
+\label{sub:disas}
+
+Das Programm speichert zuerts die Werte 4,5 und 7 im RAM.
+Dann ruft es zwei Routinen auf und beendet den Ablauf.
+
+Die erste Routine multipliziert die 3 Werte und gibt sie aus.
+
+Die Zweite Routine multipliziert immer zwei der Werte, multipliziert das Teilergebnis mit 2 und Addiert die Ergebnisse.
+
+Eine mögliche Anwendung ist das Berechnen von Volumen (\textit{LFB0}) und Oberfläche (\textit{LFB1}) eines Quaders.
+
+\section{Kontrollstrukturen}
+\subsection{Fibonacci}
+\label{sub:fib}
+
+\begin{lstlisting}
+; endwert 32 laden und speichern
+ldi 20 r0
+mov r0 20
+
+; werte fib und last
+ldi 0 r0
+ldi 1 r1
+fib_loop:
+; ausgeben
+ldi 04 SFR
+mov r0 r3
+add r1 r0
+mov r3 r1
+; testen ob fertig
+mov r0 r2
+mov 20 r3
+sub r2 r3
+jle r3 fib_loop
+
+; fertig
+
+ldi ff SFR
+
+\end{lstlisting}
+
+\part{Copyright}
+
+\copyright Copyright 2015 Daniel Knüttel
+
+Dieses Dokument ist Freie Dokumentation, frei, wie FREIheit.
+
+Sie dürfen Kopien davon machen, es verbreiten oder verändern, solange Sie mich als Autor mit angeben und die Änderungen kennzeichen.
+
+Für den Fall, dass dieses Dokument Fehler enthält, freue ich mich über einen Bericht, scließe eine Haftung für eventuelle Fehler aber aus.
+
+Wenn Sie mit diesen Bedingungen nicht einverstanden sind, dürfen Sie dieses Dokument nicht nutzen.
+
+Um meine und Ihre Rechte zu gewährleisten, steht es unter der GNU Free Documentation License. Sie ist hier einsehbar: \url{http://www.gnu.org/licenses/fdl-1.3.de.html}
+
+
+\end{document}
+
