@@ -57,7 +57,7 @@ class SpecialFunctionRegister(Register):
 
 class Ram(object):
 	""""""
-	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name="./libmemory.so"):
+	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name="./libmemory.so",stacksize=20):
 		self.memlib=cdll.LoadLibrary(memlib_file_name)
 		self.size=size
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
@@ -84,6 +84,9 @@ class Ram(object):
 		self.reg_cnt=int(registers[0:indx])
 		# a stack for push
 		self.stack=[ [] for i in range(self.reg_cnt)]
+		# stack size and usage
+		self.stacksize=stacksize
+		self.stackusage=0
 
 	def read(self,_iter):
 		if(self.nexttime_halt):
@@ -131,12 +134,20 @@ class Ram(object):
 		if(nmbr>=self.reg_cnt):
 			return
 		self.stack[nmbr].append(self.read(nmbr))
+		# nasty: stack has to be fixed sized (see definition of DFA)
+		# so this will overwrite the last element
+		if(len(self.stack)>self.stacksize):
+			self.stack=self.stack[:self.stacksize]
+		self.stackusage=len(self.stack)
 	def popr(self,nmbr):
 		if(self.nexttime_halt):
 			raise HaltException()
 		if(nmbr>=self.reg_cnt):
 			return
-		self.write(nmbr,self.stack[nmbr].pop())
+		try:
+			self.write(nmbr,self.stack[nmbr].pop())
+		except IndexError:
+			self.write(nmbr,0)
 	def set_x_data_at(self,at,x_data):
 		self.IO_functs.append(x_data)
 		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at),x_data)
