@@ -41,4 +41,6 @@ as _everybody_ may add his very own directives.
 
 ___See___ the project's wiki < https://github.com/daknuett/py_register_machine/wiki > page for more info about usage.
 
+___See___ also the tutorial/documentation project < https://github.com/daknuett/py_register_machine_tutorials > for further interesting infos
+
 _Daniel Knuettel_
