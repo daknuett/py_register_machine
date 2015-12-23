@@ -123,7 +123,10 @@ class Processor(object):
 		if(_out>=self.ram.size):
 			_to=self.flash
 			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)%_to.read(_out))
+		try:
+			_to.write(_out,_from.read(_in)%_to.read(_out))
+		except ZeroDivisionError:
+			_to.write(_out,0)
 	def modi(self,_in,_out):	
 		_from=self.ram
 		if(_out>=self.ram.size):
