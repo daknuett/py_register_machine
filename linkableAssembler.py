@@ -23,6 +23,13 @@ class LinkableAssembler(object):
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
 		self.support_static_symbolic_names=["mov","ldi"]
 		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
+		# XXX NEW: some mnemonics support only register indices !
+		self.register_only=["add","sub","mul","div","mod","and","or","xor","neg","inc","dec"]
+
+		# now the address space:
+		# highest register index
+		self.register_hi=self.ram.
+
 		self.commands={v:k for k,v in self.processor.tb_commands.items()}
 		self.commands.update({v:k for k,v in self.processor.db_commands.items()})
 		self.commands.update({v:k for k,v in self.processor.sg_commands.items()})
@@ -85,7 +92,7 @@ class LinkableAssembler(object):
 				cms[2]=cms[2][1:cms[2].index(")")]
 				if(self.debug):
 					print("  new line: {0}".format(" ".join(cms)))
-		# ATTENTION!
+		# XXX ATTENTION!
 		# we make no difference here between static symbolic names and non static symbolic names.
 		# I do not know if this will work out later. :-(
 		arg1=0
@@ -95,6 +102,12 @@ class LinkableAssembler(object):
 				arg1=int(cms[1])
 			except ValueError:
 				arg1=cms[1]
+		else:
+			try:
+				arg1=int(cms[1])
+			except ValueError:
+				raise SemanticError("command {} needs integer argument; found: '{}'".format(cms[0],cms[1]))
+			if(arg1>=
 
 
 
