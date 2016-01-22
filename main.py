@@ -4,7 +4,14 @@ import sys
 
 from memory import *
 from processor import *
-from basic_graph import *
+use_gui = True
+if( use_gui):
+	try:
+		from basic_graph import *
+	except:
+		print("warning: lcd alike graphics disables (no python3-tk found)")
+		print("install python3-tk or set ``main.use_gui = False'' to disable this warning")
+		use_gui = False
 
 # a complete ready to use register machine
 # 
@@ -27,7 +34,8 @@ if __name__=="__main__":
 		fil.close()
 		f=Flash(flash_size,std_savename=fname.encode(),saved=True)
 		p=Processor(ram=r,flash=f)
-		g=BasicGraphics(r,10,11)
+		if(use_gui):
+			g=BasicGraphics(r,10,11)
 		p.process()
 		input("hit enter to exit")
 		sys.exit()
