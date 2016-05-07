@@ -4,6 +4,7 @@ in addition to this some more object orientation.
 """
 from ctypes import *
 import os,time,sys
+from shared_lib import shared_lib
 
 SFR_COMM=CFUNCTYPE(c_void_p)
 IO_FUNCT_READ=CFUNCTYPE(c_int,c_void_p)
@@ -38,11 +39,11 @@ class Register(object):
 	def write(self,val):
 		self.memlib.Register_write(self._repr,c_int(val))
 class StdRegister(Register):
-	def __init__(self,nmbr,memlib_file_name="./libmemory.so",*args):
+	def __init__(self,nmbr,memlib_file_name=shared_lib,*args):
 		Register.__init__(self,nmbr,memlib_file_name,*args)
 		self._repr=self.memlib.newStdRegister(c_uint(nmbr))
 class OutPutRegister(Register):
-	def __init__(self,nmbr,memlib_file_name="./libmemory.so",fname="stdout",*args):
+	def __init__(self,nmbr,memlib_file_name=shared_lib,fname="stdout",*args):
 		Register.__init__(self,nmbr,memlib_file_name,*args)
 		fout=None
 		if(fname=="stdout"):
@@ -51,13 +52,13 @@ class OutPutRegister(Register):
 		if(fout==None):raise BaseException("no valid output stream!")
 		self._repr=self.memlib.newOutPutRegister(c_uint(nmbr),fout)
 class SpecialFunctionRegister(Register):
-	def __init__(self,nmbr,memlib_file_name="./libmemory.so",*args):
+	def __init__(self,nmbr,memlib_file_name=shared_lib,*args):
 		Register.__init__(self,nmbr,memlib_file_name,*args)
 		self._repr=self.memlib.newSpecialFunctionRegister(c_uint(nmbr))
 
 class Ram(object):
 	""""""
-	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name="./libmemory.so",stacksize=20):
+	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name=shared_lib,stacksize=20):
 		self.memlib=cdll.LoadLibrary(memlib_file_name)
 		self.size=size
 		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
@@ -158,7 +159,7 @@ def callback_exit():
 	return c_int(0)
 
 class Flash(object):
-	def __init__(self,size,memlib_file_name="./libmemory.so",std_savename=b"flash.save",saved=False):
+	def __init__(self,size,memlib_file_name=shared_lib,std_savename=b"flash.save",saved=False):
 		self.memlib=cdll.LoadLibrary(memlib_file_name)
 		self.std_savename=std_savename
 		self.size=size

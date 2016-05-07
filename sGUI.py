@@ -1,3 +1,6 @@
+import sys
+sys.path.append("./pythons")
+
 from memory import *
 from processor import *
 from basic_graph import *

@@ -2,6 +2,7 @@ from memory import *
 from processor import *
 import string
 
+
 STD_INC_PATH="./assemblys/"
 DEBUG=False
 

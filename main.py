@@ -2,6 +2,8 @@
 
 import sys
 
+sys.path.append("./pythons/")
+
 from memory import *
 from processor import *
 use_gui = True

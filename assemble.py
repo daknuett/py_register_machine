@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append("./pythons/")
+
 from assembler import *
 from processor import *
 from memory import *
