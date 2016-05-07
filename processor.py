@@ -3,9 +3,9 @@ execute commands to modify the data
 """
 from memory import *
 
-DEFAULT_RAM_S=160
-DEFAULT_FLASH_S=360
-DEBUG=False
+DEFAULT_RAM_S = 160
+DEFAULT_FLASH_S = 360
+DEBUG = False
 
 class SIGSEGV(BaseException):
 	def __init__(self,*args):
@@ -50,12 +50,12 @@ class Processor(object):
 			self.sg_commands={0x9:"nop",0x11:"ret",0x24:"fdump"}
 		else:
 			self.sg_commands=sg_commands
-		self.PC=self.ram.size # used to move over the memory, starting at first flash block
-		self.stddef={"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp,"fdump":self.fdump}
+		self.PC = self.ram.size # used to move over the memory, starting at first flash block
+		self.stddef = {"mov":self.mov,"add":self.add,"sub":self.sub,"mul":self.mul,"div":self.div,"ldi":self.ldi,"addi":self.addi,"subi":self.subi,"or":self._or,"xor":self.xor,"and":self._and,"ori":self.ori,"xori":self.xori,"andi":self.andi,"neg":self.neg,"inc":self.inc,"dec":self.dec,"jmp":self.jmp,"pjmp":self.pjmp,"jne":self.jne,"pjne":self.pjne,"jeq":self.jeq,"pjeq":self.pjeq,"jle":self.jle,"pjle":self.pjle,"jlt":self.jlt,"pjlt":self.pjlt,"jgt":self.jgt,"pjgt":self.pjgt,"jge":self.jge,"pjge":self.pjge,"nop":self.nop,"call":self.call,"ret":self.ret,"mod":self.mod,"modi":self.modi,"pop":self.pop,"push":self.push,"pmov":self.pmov,"movp":self.movp,"fdump":self.fdump}
 		self.abs_comms = 0
 		self.loads = 0
-		self.stack=[]
-		self.traceback=[]
+		self.stack = []
+		self.traceback = []
 	def __dumps__(self):
 		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
 	def __dump__(self,fname):
