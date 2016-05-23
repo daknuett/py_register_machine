@@ -4,7 +4,7 @@ import string
 
 
 STD_INC_PATH="./assemblys/"
-DEBUG=False
+DEBUG = True
 
 """ use an assembly file to programm the flash. """
 
@@ -112,7 +112,7 @@ class Assembler(object):
 		self.line_count=0
 		# symbolic names are dereferenced by the assembler
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
-		self.support_static_symbolic_names=["mov","ldi"]
+		self.support_static_symbolic_names=["mov","ldi","icall"]
 		self.static_symbols={}
 		self.i_commands=["ldi","addi","subi","xori","ori","andi","modi"]
 		self.commands={v:k for k,v in self.processor.tb_commands.items()}
@@ -121,32 +121,113 @@ class Assembler(object):
 		self.tb_commands={v:k for k,v in self.processor.tb_commands.items()}
 		self.db_commands={v:k for k,v in self.processor.db_commands.items()}
 		self.sg_commands={v:k for k,v in self.processor.sg_commands.items()}
+
+		self.flag_skipline = False
+		self.interrupts = {}
 	def compile(self):
+		if(DEBUG):
+			print("DEBUG::flash.size = ",self.processor.flash.size) 
 		compiled=[]
-		for line in self.lines:
+		for lineno,line in enumerate(self.lines):
+			compiled.extend(self.compileline(lineno,line,self.lines))
+		# DONE with syntax and mnemonic parsing
+		# NOW: generating the references
+		#
+		#
+		#
+		for k,v in self.symbols.items():
+			if(v=="?"):
+				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
+		new_compiled=[]
+		it=0
+		if(DEBUG):
+			print("symbol references:",self.symbol_refs)
+			print("symbols:",self.symbols)
+			print("static symbols:",self.static_symbols)
+		for line in compiled:
+			if(line in self.symbols):
+				orig=line # saving the  line for further operations
+				if(DEBUG):
+					print("DEBUG::{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
+				line=self.symbols[line]-((it)+self.processor.ram.size)
+				 # took me about 3 h reading disassembly, to find this bug.
+				 # we have to skip the arguments +_+ 
+				callers=self.symbol_refs[orig]
+				for caller in callers:
+					if(DEBUG):
+						print(caller)
+					if(caller[0]+1==it or caller[0]+2==it):
+						if(caller[1] in self.tb_commands):
+							if(DEBUG):
+								print("DEBUG::{0} : needs 2 args: adding 2 to line".format(caller))
+							line += 2 
+						elif(caller[1] in self.db_commands):
+							if(DEBUG):
+								print("DEBUG::{0} : needs 1 arg: adding 1 to line".format(caller))
+							line += 1
+						else:
+							print("WARNING::",self.tb_commands,self.db_commands,caller[1])
+							print("WARNING::Something creepy happened. I am ignoring it.")
+			if(line in self.static_symbols):
+				if(self.static_symbols[line]=="?"):
+					raise UnboundReferenceError("{0} not referenced!(static references: {1})".format(line,self.static_symbols))
+				line=self.static_symbols[line]
+			new_compiled.append(line)
+			it+=1
+		for i in range(len(new_compiled)):
+			if(isinstance(new_compiled[i],int)):
+				self.processor.flash.write(i,new_compiled[i])
+			else:
+				self.processor.flash.write(i,int(new_compiled[i],16))
+		# write the interrupt handlers
+		if(DEBUG):
+			print("DEBUG::interrupts: ",self.interrupts)
+		for address, handle in self.interrupts.items():
+			for _iter,content in enumerate(handle):
+				if(isinstance(content, int)):
+					if(DEBUG):
+						print("DEBUG::writing to address {} : {}".format(address + _iter, content))
+					self.processor.flash.write(address + _iter, content)
+					if(DEBUG):
+						print("DEBUG::readback({}) : {}".format(address,self.processor.flash.read(address)))
+				else:
+
+					if(content in self.symbols):
+						self.processor.flash.write(address + _iter,self.symbols[content])
+					else:
+						raise UnboundReferenceError("{0} not referenced!(references: {1})".format(content,self.symbols))
+		return (self.processor.flash.size,self.line_count)
+
+
+
+	def compileline(self,lineno,line,lines):
+		compiled = []
+		if(self.flag_skipline):
+			flag_skipline = False
+			return []
+		else:
 			if(DEBUG):
 				print('{1} compiling line "{0}"'.format(line,self.line_count))
 			cms=line.split()
 			if(len(cms)==0):
-				continue
+				return []
 			# support characters (eg for prints)
 			if(len(cms)>=2 and cms[1][0]=="'"):
 				cms[1]=hex(ord(cms[1][1:-1]))[2:] # as we are using still strings ;-)
 			if(len(cms)>=3 and cms[2][0]=="'"):
 				cms[2]=hex(ord(cms[2][1:-1]))[2:]
 			# support preassembled arithmetics
-			#TODO: update wiki
 			if(len(cms)>=2 and cms[1][0]=="["):
 				if(DEBUG):
-					print(cms)
-					print(line)
+					print("DEBUG::",cms)
+					print("DEBUG::",line)
 				cms[0]=cms[0]
 				cms[1]=line[line.index("["):line.index("]")+1]
 				cms[2]=line[line.index("]")+1:]
 				cms=cms[:3]
 				line=line[line.index("]")+1:]
 				if(DEBUG):
-					print(cms)
+					print("DEBUG::",cms)
 				cms[1]=hex(eval(cms[1][1:-1]))[2:]
 			if(len(cms)>=3 and cms[2][0]=="["):
 				cms[2]=line[line.index("["):line.index("]")+1]
@@ -319,61 +400,22 @@ class Assembler(object):
 					i+=1
 				compiled.append(0)
 				self.line_count+=strlen
+			# new: interrupts
+			# TODO: update wiki
+			elif(cms[0] == "@interrupt"):
+				interrupt_name = cms[1]
+				interrupt_call = self.compileline(lineno + 1,lines[lineno + 1],lines)
+				self.flag_skipline = True
+				address = self.processor.interrupt_address_from_name(interrupt_name, flash_address = True)
+				self.interrupts[address] = interrupt_call
+
+				
 
 				
 			else:
 				raise SyntaxError("{0}: not an expression!\n avaiable commands: {1}".format(line,self.commands))
+			return compiled
 
-		# DONE with syntax and mnemonic parsing
-		# NOW: generating the references
-		#
-		#
-		#
-		for k,v in self.symbols.items():
-			if(v=="?"):
-				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
-		new_compiled=[]
-		it=0
-		if(DEBUG):
-			print("symbol references:",self.symbol_refs)
-			print("symbols:",self.symbols)
-			print("static symbols:",self.static_symbols)
-		for line in compiled:
-			if(line in self.symbols):
-				orig=line # saving the  line for further operations
-				if(DEBUG):
-					print("{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
-				line=self.symbols[line]-((it)+self.processor.ram.size)
-				 # took me about 3 h reading disassembly, to find this bug.
-				 # we have to skip the arguments +_+ 
-				callers=self.symbol_refs[orig]
-				for caller in callers:
-					if(DEBUG):
-						print(caller)
-					if(caller[0]+1==it or caller[0]+2==it):
-						if(caller[1] in self.tb_commands):
-							if(DEBUG):
-								print("{0} : needs 2 args: adding 2 to line".format(caller))
-							line += 2 
-						elif(caller[1] in self.db_commands):
-							if(DEBUG):
-								print("{0} : needs 1 arg: adding 1 to line".format(caller))
-							line += 1
-						else:
-							print(self.tb_commands,self.db_commands,caller[1])
-							print("Something creepy happened. I am ignoring it.")
-			if(line in self.static_symbols):
-				if(self.static_symbols[line]=="?"):
-					raise UnboundReferenceError("{0} not referenced!(static references: {1})".format(line,self.static_symbols))
-				line=self.static_symbols[line]
-			new_compiled.append(line)
-			it+=1
-		for i in range(len(new_compiled)):
-			if(isinstance(new_compiled[i],int)):
-				self.processor.flash.write(i,new_compiled[i])
-			else:
-				self.processor.flash.write(i,int(new_compiled[i],16))
-		return (self.processor.flash.size,self.line_count)
 class UnboundReferenceError(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
