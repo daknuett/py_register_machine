@@ -9,6 +9,51 @@ DEBUG = 5
 
 
 """
+About Interrupts
+################
+Any Interrupt is an asynchronous coroutine in another thread or another process.
+
+If the Interrupt is driven by a thread, it is an internal interrupt and will be called
+using the ``processor.Processor.interrupt'' method.
+This method will contact the main thread via socket and the main thread will handle the
+interrupt
+
+If the Interrupt is driven by another process (maybe on a remote host) it is an external
+interrupt. This process will have to contact the main thread via socket and transmit the
+interrupt name. TODO: implement external interrupts.
+
+Implementation in the Processor
+###############################
+The Processor stores all interrupts by name and address in the program memory.
+If an interrupt is caused, the Processor object will stop the normal execution
+and go to the address of the interrupt. There has to be either a call of an interrupt handle
+or a ``ret'':
+
+    @interrupt foo
+    icall foo_handle
+    ret
+
+or
+    @interrupt bar
+    ret
+
+The interrupt addresses start at the end of flash - 1 and grow to the beginning of the flash.
+For every interrupt 4 words are reserved:
+
+    3df    11     | second registered interrupt: ret
+    3e0    0    
+    3e1    0
+    3e2    0
+    3e3    1f     | first registered interrupt: icall
+    3e4    192    | address of interrupt handle
+    3e5    11     | ret
+    3e6    0      | 4th interrupt word
+    3e7    0      | pad word and last memory address
+
+
+
+About Internal Interrupts
+#########################
 To provide stable interrupts a socketpair is used.
 ``socket.socketpair()'' provides such a pair of connected sockets.
 There is one socket for the main thread/process, which is stored in
