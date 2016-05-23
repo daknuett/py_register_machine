@@ -557,7 +557,7 @@ class Processor(object):
 	#     ret
 	def icall(self, address):
 		self.stack.append(self.PC)
-		self.__jmp__(ptr, static = True, addrspace_inflash = True)
+		self.__jmp__(address, static = True, addrspace_inflash = False)
 
 
 	def process(self):
