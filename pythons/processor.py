@@ -2,6 +2,7 @@
 execute commands to modify the data
 """
 from memory import *
+import sys
 
 DEFAULT_RAM_S = 160
 DEFAULT_FLASH_S = 360
@@ -30,12 +31,19 @@ def Processor_from_str(_str):
 class Processor(object):
 	from_str=Processor_from_str
 	def __init__(self,ram=None,flash=None,tb_commands=None,db_commands=None,sg_commands=None,*args):
+		def callback_exit():
+			print("exiting.")
+			del(self.ram)
+			del(self.flash)
+			sys.exit(0)
+			return c_int(0)
+		self.callback_exit = callback_exit
 		if(ram==None):
-			self.ram=Ram(DEFAULT_RAM_S)
+			self.ram = Ram(DEFAULT_RAM_S, _callback_exit = self.callback_exit)
 		else:
-			self.ram=ram
+			self.ram = ram
 		if(flash==None):
-			self.flash=Flash(DEFAULT_FLASH_S)
+			self.flash = Flash(DEFAULT_FLASH_S)
 		else:
 			self.flash=flash
 		if(tb_commands==None):

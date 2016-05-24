@@ -10,7 +10,6 @@ ldi 04 SFR
 mov r0 1d4
 fdump
 
-ldi fe SFR
 ldi ff SFR
 
 .set test_byte 15

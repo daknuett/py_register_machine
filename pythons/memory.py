@@ -58,14 +58,28 @@ class SpecialFunctionRegister(Register):
 
 class Ram(object):
 	""""""
-	def __init__(self,size,registers="10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",register_count=10,memlib_file_name=shared_lib,stacksize=20):
-		self.memlib=cdll.LoadLibrary(memlib_file_name)
-		self.size=size
-		register_reprs=self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
-		self._repr=self.memlib.newRam(c_size_t(size),register_reprs,register_count)
-		self.callback_functs=[]
-		self.IO_functs=[]	# protection against the goddammed garbage collection
-		self.add_SFR_callback(0xff,SFR_COMM(callback_exit))
+	def __init__(self,
+			size,
+			registers = "10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",
+			register_count = 10,
+			memlib_file_name = shared_lib,
+			stacksize = 20, 
+			_callback_exit = None):
+		def callback_exit():
+			print("exiting.")
+			sys.exit(0)
+			return c_int(0)
+
+		if(_callback_exit == None):
+			_callback_exit = callback_exit
+
+		self.memlib = cdll.LoadLibrary(memlib_file_name)
+		self.size = size
+		register_reprs = self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
+		self._repr = self.memlib.newRam(c_size_t(size),register_reprs,register_count)
+		self.callback_functs = []
+		self.IO_functs = []	# protection against the goddammed garbage collection
+		self.add_SFR_callback(0xff, SFR_COMM(_callback_exit))
 		def hw_print_int():
 			print(self.read(0))
 		def ram_dump():
@@ -88,6 +102,8 @@ class Ram(object):
 		# stack size and usage
 		self.stacksize=stacksize
 		self.stackusage=0
+	def __del__(self):
+		self.memlib.delRam(self._repr)
 
 	def read(self,_iter):
 		if(self.nexttime_halt):
@@ -153,10 +169,6 @@ class Ram(object):
 		self.IO_functs.append(x_data)
 		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at),x_data)
 
-def callback_exit():
-	print("exiting.")
-	sys.exit(0)
-	return c_int(0)
 
 class Flash(object):
 	def __init__(self,size,memlib_file_name=shared_lib,std_savename=b"flash.save",saved=False):
@@ -167,6 +179,8 @@ class Flash(object):
 			self._repr=self.memlib.newFlash(c_size_t(size))
 		else:
 			self._repr=self.memlib.Flash_from_file(c_char_p(std_savename))
+	def __del__(self):
+		self.memlib.delFlash(self._repr)
 	def read(self,_iter):
 		return self.memlib.Flash_read(self._repr,c_size_t(_iter))
 	def write(self,_iter,value):
