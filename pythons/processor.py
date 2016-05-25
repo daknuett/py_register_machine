@@ -399,7 +399,7 @@ class Processor(object):
 			self.PC = ptr
 		else:
 			self.PC+=ptr # relative!!
-		if(DEBUG > 3):
+		if(DEBUG > 6):
 			print("DEBUG::[static][jmp]({})".format(self.PC))
 		self.traceback.append((oldloc,self.PC))
 		raise JMPException(str(oldloc))
@@ -643,16 +643,19 @@ class Processor(object):
 			ptr -= self.ram.size
 		com=_ptr_loc.read(ptr)
 		if(DEBUG > 3):
-			try:
-				print(ptr,_ptr_loc.read(ptr),self.sg_commands[com])
-			except:
-				try:
-					print(ptr,_ptr_loc.read(ptr),self.db_commands[com],_ptr_loc.read(ptr+1))
-				except:
-					try:
-						print(ptr,_ptr_loc.read(ptr),self.tb_commands[com],_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
-					except:
-						pass
+			if(com in self.sg_commands):
+				print("--word[{}]: {} (= <{}>)".format(ptr,_ptr_loc.read(ptr),self.sg_commands[com]))
+			elif(com in self.db_commands):
+				print("--word[{}]: {} (= <{}>) <{}>".format(ptr,
+							_ptr_loc.read(ptr),
+							self.db_commands[com],
+							_ptr_loc.read(ptr + 1)))
+			else:
+				print("--word[{}]: {} (= <{}>) <{}> <{}>".format(ptr,
+							_ptr_loc.read(ptr),
+							self.tb_commands[com],
+							_ptr_loc.read(ptr+1),
+							_ptr_loc.read(ptr+2)))
 		self.abs_comms += 1
 		if(com in self.sg_commands):
 			self.stddef[self.sg_commands[com]]()
