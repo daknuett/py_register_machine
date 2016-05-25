@@ -2,6 +2,7 @@
 execute commands to modify the data
 """
 from memory import *
+import sys
 
 DEFAULT_RAM_S = 160
 DEFAULT_FLASH_S = 360
@@ -120,8 +121,15 @@ class Processor(object):
 			sg_commands = None,
 			interrupt_desciptors = [],
 			*args):
+		def callback_exit():
+			print("exiting.")
+			del(self.ram)
+			del(self.flash)
+			sys.exit(0)
+			return c_int(0)
+		self.callback_exit = callback_exit
 		if(ram == None):
-			self.ram = Ram(DEFAULT_RAM_S)
+			self.ram = Ram(DEFAULT_RAM_S, _callback_exit = self.callback_exit)
 		else:
 			self.ram = ram
 		if(flash == None):

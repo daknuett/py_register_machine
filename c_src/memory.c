@@ -193,6 +193,10 @@ void IORegister_write(Register * reg,int val)
 	#ifdef DEBUG
 	printf("[%s]writing IO register %zd to %d\n",__FILE__,reg,val);
 	#endif
+	if(reg->x_data == NULL)
+	{
+		return;
+	}
 	((IOFuncts * )reg->x_data)->write(reg,val);
 	#ifdef DEBUG
 	printf("[%s]writing IO register %zd done.\n",__FILE__,reg);
@@ -200,6 +204,12 @@ void IORegister_write(Register * reg,int val)
 }
 int IORegister_read(Register * reg)
 {
+	// if the IORegister is missing his functs
+	// this would produce a SIG11
+	if(reg->x_data == NULL)
+	{
+		return -1;
+	}
 	return ((IOFuncts * )reg->x_data)->read(reg);
 }
 
@@ -218,14 +228,21 @@ void IORegister_set_functs(Register * reg,IOFuncts * functs)
 
 Register ** Registers_from_string(char * string)
 {
-	size_t size,i=0;
-	char * token=strsep(&string,"/");
-	char * str=malloc(sizeof(char)*20);
+	// strsep does not work with const strings.
+	// So we will have to make the string noconst:
+	char * noconst_string = malloc(sizeof(char) * (strlen(string) + 1));
+	char * ill_have_to_free_this = noconst_string;
+	strcpy(noconst_string, string);
+
+
+	size_t size, i = 0;
+	char * token = strsep(&noconst_string, "/");
+	char * str = malloc(sizeof(char) * 20);
 	sscanf(token,"%zd/",&size);
-	Register ** regs=malloc(sizeof(Register * ) * size);
+	Register ** regs = malloc(sizeof(Register * ) * size);
 	do
 	{
-		token=strsep(&string,";");
+		token=strsep(&noconst_string,";");
 		int nmbr,type;
 		if(sscanf(token,"%u,%u,%s",&nmbr,&type,str)!=3)
 		{
@@ -258,6 +275,7 @@ Register ** Registers_from_string(char * string)
 	}
 	while(i<size);
 	free(str);
+	free(ill_have_to_free_this);
 	return regs;
 }
 
@@ -286,6 +304,19 @@ Ram * newRam(size_t size,Register ** regs,unsigned int regs_count)
 	r->regs=regs;
 	r->regs_count=regs_count;
 	return r;
+}
+
+void delRam(Ram * ram)
+{
+	free(ram->mem);
+	size_t iter;
+	for(iter = 0; iter < ram->regs_count; iter ++)
+	{
+		delRegister(ram->regs[iter]);
+	}
+	free(ram->regs);
+	free(ram);
+
 }
 
 int Ram_read(Ram * ram,size_t iter)
@@ -368,6 +399,12 @@ Flash * newFlash(size_t size)
 	}
 	f->size=size;
 	return f;
+}
+
+void delFlash(Flash * flash)
+{
+	free(flash->mem);
+	free(flash);
 }
 
 void Flash_dump(Flash * flash,char * fname)
