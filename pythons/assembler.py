@@ -3,8 +3,8 @@ from processor import *
 import string
 
 
-STD_INC_PATH="./assemblys/"
-DEBUG=False
+STD_INC_PATH = "./assemblys/"
+DEBUG = True
 
 """ use an assembly file to programm the flash. """
 
@@ -65,7 +65,7 @@ class Preprocessor(object):
 				if(word in self.symbols):
 					new_line.append(self.symbols[word])
 					if(DEBUG):
-						print("preprocessor: substituting {0} with {1}".format(word,self.symbols[word]))
+						print("DEBUG:: preprocessor: substituting <{0}> with <{1}>".format(word,self.symbols[word]))
 				else:
 					new_line.append(word)
 			line=" ".join(new_line)
@@ -109,7 +109,7 @@ class Assembler(object):
 		self.lines=self.f.read().split("\n")
 		self.symbols={} # the addresses
 		self.symbol_refs={} # for relative addresses we need the current address
-		self.line_count=0
+		self.word_count=0
 		# symbolic names are dereferenced by the assembler
 		self.support_symbolic_names=["jmp","call","jne","jeq","jle","jge","jlt","jgt"]
 		self.support_static_symbolic_names=["mov","ldi"]
@@ -125,7 +125,7 @@ class Assembler(object):
 		compiled=[]
 		for line in self.lines:
 			if(DEBUG):
-				print('{1} compiling line "{0}"'.format(line,self.line_count))
+				print('||word[{1},...]: compiling line "{0}"'.format(line,self.word_count))
 			cms=line.split()
 			if(len(cms)==0):
 				continue
@@ -155,162 +155,87 @@ class Assembler(object):
 
 			if(cms[0] in self.tb_commands):
 				if(DEBUG):
-					print("{0} compiling as command(len=3)".format(self.line_count))
+					print("C|word[{0}, {1}, {2}] compiling as command(len=3)".format(self.word_count,
+								self.word_count + 1,
+								self.word_count + 2))
 				if(len(cms)!=3):
 					raise SemanticError("command {0} wants 2 args, but got {1}: {2}".format(cms[0],len(cms),line))
 				# this will allow the at&t ptr handling with ``mov (ptr) addr''
 				if("pmov" in self.tb_commands):
 					if(cms[0]=="mov" and cms[1][0]=="("):
 						if(DEBUG):
-							print(" interpreting {0} as pmov".format(line))
+							print("|- interpreting <{0}> as pmov".format(line))
 						cms[0]="pmov"
 						cms[1]=cms[1][1:cms[1].index(")")]
 						if(DEBUG):
-							print("  new line: {0}".format(" ".join(cms)))
+							print("|-- new line: <{0}>".format(" ".join(cms)))
 
 				if("movp" in self.tb_commands):
 					if(cms[0]=="mov" and cms[2][0]=="("):
 						if(DEBUG):
-							print(" interpreting {0} as movp".format(line))
+							print("|- interpreting <{0}> as movp".format(line))
 						cms[0]="movp"
 						cms[2]=cms[2][1:cms[2].index(")")]
 						if(DEBUG):
-							print("  new line: {0}".format(" ".join(cms)))
-				#
-				# TODO: seperated methods for this.
-				# very hard to understand due bad coding :-(
-				#
-				try:
-					i=int(cms[1],16)
-					if(i>self.processor.ram.size+self.processor.flash.size or i<0):
-						if(cms[0] not in self.i_commands):
-							raise SemanticError("{0}: not a valid address!".format(cms[1]))
-				except :
-					if(cms[0] not in self.support_static_symbolic_names):
-						print(cms[0])
-						raise SemanticError("{0}: not a valid address or number!".format(cms[1]))
-					else:
-						pass
-				if((not cms[0] in self.support_symbolic_names) or ( cms[0] in self.support_static_symbolic_names)):
-					try:
-						i=int(cms[2],16)
-						if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
-							raise ValueError()
-					except:
-						if(cms[0] in self.support_static_symbolic_names):
-							pass
-						else:
-							raise SemanticError("{0}: not a valid address!".format(cms[2]))
-				else:
-					_pass=False
-					try:
-						i=int(cms[2],16)
-					except:
-						if(cms[0] in self.support_symbolic_names):
-							if(cms[2] in self.symbols):
-								self.symbol_refs[cms[2]].append((self.line_count,cms[0]))
-							else:
-								self.symbols[cms[2]]="?"
-								self.symbol_refs[cms[2]]=[(self.line_count,cms[0])]
-						else:
-							if(cms[2] in self.static_symbols):
-								pass
-							else:
-								self.static_symbols[cms[2]]="?"
-						_pass=True
-					if(not _pass):
-						i=int(cms[2])
-					if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
-						raise SemanticError("{0}: not a valid address!".format(cms[2]))
-				try:
-					compiled.append(self.commands[cms[0]])
-				except KeyError:
-					raise SyntaxError("{0}: command not found!".format(cms[0]))
-				compiled.append(cms[1])
-				compiled.append(cms[2])
-				self.line_count+=3
+							print("|-- new line: <{0}>".format(" ".join(cms)))
+
+				compiled.extend(self.compile_tb_command(cms))
+				self.word_count+=3
 			elif(cms[0] in self.db_commands):
 				if(DEBUG):
-					print("{0} compiling as command(len=2)".format(self.line_count))
-				if(len(cms)!=2):
-					raise SemanticError("command {0} wants 1 arg, but got {1}: {2}".format(cms[1],len(cms),line))
-				if(cms[0] in self.support_symbolic_names):
-					if(cms[1] in self.symbols):
-						self.symbol_refs[cms[1]].append((self.line_count,cms[0]))
-					else:
-						try:
-							i=int(cms[1],16)
-						except:
-							self.symbols[cms[1]]="?"
-							self.symbol_refs[cms[1]]=[(self.line_count,cms[0])] # for correct handling of relative addresses
-						try:
-							i=int(cms[1])
-							if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
-								raise SemanticError("{0}: not a valid address!".format(cms[1]))
-						except ValueError:
-							pass
-				else:
-					try:
-						i=int(cms[1],16)
-						if(i<0 or i>self.processor.ram.size+self.processor.flash.size):
-							raise ValueError
-					except:
-						raise SemanticError("{0}: not a valid address!".format(cms[1]))
-				try:
-					compiled.append(self.commands[cms[0]])
-				except KeyError:
-					raise SyntaxError("{0}: command not found!".format(cms[0]))
-				compiled.append(cms[1])
-				self.line_count+=2
+					print("C|word[{0}, {1}] compiling as command(len=2)".format(self.word_count,
+								self.word_count + 1))
+				compiled.extend(self.compile_db_command(cms))
+				self.word_count+=2
 			elif(cms[0] in self.sg_commands):
 				if(DEBUG):
-					print("{0} compiling as command(len=1)".format(self.line_count))
+					print("C|word[{0}] compiling as command(len=1)".format(self.word_count))
 				if(len(cms)!=1):
 					raise SemanticError("command {0} wants 0 args, but got {1}: {2}".format(cms[1],len(cms),line))
 				try:
 					compiled.append(self.commands[cms[0]])
 				except KeyError:
 					raise SyntaxError("{0}: command not found!".format(cms[0]))
-				self.line_count+=1
+				self.word_count+=1
 			# addressing of jump marks
 			#
 			#
 			elif(cms[0][-1]==":"):
 				if(DEBUG):
-					print("{1} compiling as symbol {0}".format(cms[0][:-1],self.line_count))
+					print("S|word[{1}] compiling as symbol :: SYM<{0}>".format(cms[0][:-1], self.word_count))
 				if(cms[0][:-1] in self.symbols):
-					if(self.symbols[cms[0][:-1]] !="?"):
+					if(self.symbols[cms[0][:-1]] != "?"):
 						raise SemanticError("{0}: multiple definitions of symbol!".format(cms[0]))
 					else:
-						self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
+						self.symbols[cms[0][:-1]] = self.processor.ram.size + self.word_count
 				else:
-					self.symbols[cms[0][:-1]]=self.processor.ram.size+self.line_count
-					self.symbol_refs[cms[0][:-1]]=[]
+					self.symbols[cms[0][:-1]] = self.processor.ram.size + self.word_count
+					self.symbol_refs[cms[0][:-1]] = []
 			# new: datasetting
 			#
 			elif(cms[0]==".set"):
-				if(self.line_count==0):
-					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.line_count,line))
+				if(self.word_count==0):
+					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.word_count,line))
 				if(DEBUG):
-					print("{1} setting data (name: {0}) : {2}".format(cms[1],self.line_count,cms[2]))
+					print("D|word[{1}] setting data (name: {0}) : {2}".format(cms[1],self.word_count,cms[2]))
 				# for characters
 				if(cms[2][0]=="'"):
 					cms[2]=ord(cms[2][1:2])
 				compiled.append(cms[2])
-				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
-				self.line_count+=1
+				self.static_symbols[cms[1]]=self.word_count+self.processor.ram.size
+				self.word_count+=1
 			# new: strings
 			# usage: .string <name> "string"
 			# will add a null terminated in the flash and add a reference to the first char
 			# use it like a c string with pointer arithmethic.
 			elif(cms[0]==".string"):
-				if(self.line_count==0):
-					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.line_count,line))
+				if(self.word_count==0):
+					raise SemanticError("(memory {0}): [{1}]: program has to start with program, not with data!".format(self.word_count,line))
 				_str=" ".join(cms[2:])[1:-1] # strip ""
 				strlen=len(_str)+1 # null
-				self.static_symbols[cms[1]]=self.line_count+self.processor.ram.size
+				self.static_symbols[cms[1]]=self.word_count+self.processor.ram.size
 				if(DEBUG):
-					print("{1} setting string (name: {0}) : {2}".format(cms[1],self.line_count,_str))
+					print("D|word[{1},...] setting string (name: {0}) : {2}".format(cms[1],self.word_count,_str))
 				i=0
 				while( i < len(_str)):
 					compiled.append(ord(_str[i]))
@@ -318,7 +243,7 @@ class Assembler(object):
 						print("adding string literal ",compiled[-1])
 					i+=1
 				compiled.append(0)
-				self.line_count+=strlen
+				self.word_count += strlen
 
 				
 			else:
@@ -332,48 +257,179 @@ class Assembler(object):
 		for k,v in self.symbols.items():
 			if(v=="?"):
 				raise UnboundReferenceError("{0} not referenced!(references: {1})".format(k,self.symbols))
-		new_compiled=[]
-		it=0
+		new_compiled = []
 		if(DEBUG):
-			print("symbol references:",self.symbol_refs)
-			print("symbols:",self.symbols)
-			print("static symbols:",self.static_symbols)
-		for line in compiled:
-			if(line in self.symbols):
-				orig=line # saving the  line for further operations
+			print("DEBUG:: symbol references:",self.symbol_refs)
+			print("DEBUG:: symbols:",self.symbols)
+			print("DEBUG:: static symbols:",self.static_symbols)
+		for address, word in enumerate(compiled):
+			if(word in self.symbols):
+				orig = word # saving the  word for further operations
 				if(DEBUG):
-					print("{0} adding reference ({3}) (abs: {1} || rel: {2})".format(it,self.symbols[line],self.symbols[line]-((it)+self.processor.ram.size),line))
-				line=self.symbols[line]-((it)+self.processor.ram.size)
+					print("||word[{0}] adding reference ({3}) (abs: {1} || rel: {2})".format(address,
+								self.symbols[word],
+								self.symbols[word] - ( (address) + self.processor.ram.size),
+								word))
+				word = self.symbols[word] - ( (address) + self.processor.ram.size)
 				 # took me about 3 h reading disassembly, to find this bug.
 				 # we have to skip the arguments +_+ 
-				callers=self.symbol_refs[orig]
-				for caller in callers:
+				calls = self.symbol_refs[orig]
+				for call in calls:
 					if(DEBUG):
-						print(caller)
-					if(caller[0]+1==it or caller[0]+2==it):
-						if(caller[1] in self.tb_commands):
-							if(DEBUG):
-								print("{0} : needs 2 args: adding 2 to line".format(caller))
-							line += 2 
-						elif(caller[1] in self.db_commands):
-							if(DEBUG):
-								print("{0} : needs 1 arg: adding 1 to line".format(caller))
-							line += 1
-						else:
-							print(self.tb_commands,self.db_commands,caller[1])
-							print("Something creepy happened. I am ignoring it.")
-			if(line in self.static_symbols):
-				if(self.static_symbols[line]=="?"):
-					raise UnboundReferenceError("{0} not referenced!(static references: {1})".format(line,self.static_symbols))
-				line=self.static_symbols[line]
-			new_compiled.append(line)
-			it+=1
-		for i in range(len(new_compiled)):
-			if(isinstance(new_compiled[i],int)):
-				self.processor.flash.write(i,new_compiled[i])
+						print("DEBUG:: call:",call)
+					if( call[0] + 1 == address or call[0] + 2 == address):
+						if(DEBUG):
+							print("DEBUG:: (word {2})adding offset of {0}: {1}".format(call[1], call[2], call[0]))
+						word += call[2]
+			if(word in self.static_symbols):
+				if(self.static_symbols[word]=="?"):
+					raise UnboundReferenceError("{0} not referenced!(static references: {1})".format(word,self.static_symbols))
+				word=self.static_symbols[word]
+			new_compiled.append(word)
+		for address, word in enumerate(new_compiled):
+			if(isinstance(word,int)):
+				self.processor.flash.write(address, word)
 			else:
-				self.processor.flash.write(i,int(new_compiled[i],16))
-		return (self.processor.flash.size,self.line_count)
+				self.processor.flash.write(address, int(word, 16))
+		return (self.processor.flash.size,self.word_count)
+
+	def compile_tb_command(self,cms):
+		compiled = []
+		first_arg_is_number = False
+		second_arg_is_number = False
+
+		try:
+			int(cms[1], 16)
+			first_arg_is_number = True
+		except:
+			pass
+		try:
+			int(cms[2], 16)
+			second_arg_is_number = True
+		except:
+			pass
+
+		# command does not support any symbols:
+		if( (not cms[0] in self.support_static_symbolic_names) and
+			(not cms[0] in self.support_symbolic_names) and
+			(False in (second_arg_is_number, first_arg_is_number))):
+				raise SemanticError("{0} or {1} not a valid address or number".format(cms[1],cms[2]))
+
+		# check for valid addresses
+		if( (not cms[0] in self.i_commands) and first_arg_is_number):
+			addr = int(cms[1], 16)
+			if( (addr > self.processor.ram.size + self.processor.flash.size) or
+					(addr < 0)):
+				raise SemanticError("{0}: not a valid address!".format(cms[1]))
+		# the second argument is __always__ an address!
+		if(second_arg_is_number):
+			addr = int(cms[2], 16)
+			if( (addr > self.processor.ram.size + self.processor.flash.size) or
+					(addr < 0)):
+				raise SemanticError("{0}: not a valid address!".format(cms[2]))
+		
+
+		# Now everything should be valid:
+		# Actually compile the command and the args.
+		# If an arg is not a number check for symbols.
+		compiled_command = None
+		try:
+			compiled_command = self.tb_commands[cms[0]]
+		except:
+			raise SyntaxError("{0}: command not found!".format(cms[0]))
+		compiled.append(compiled_command)
+
+		# compile first arg
+		if(first_arg_is_number):
+			compiled.append(int(cms[1], 16))
+		else:
+			if(cms[0] in self.support_static_symbolic_names):
+				if( cms[1] not in  self.static_symbols):
+					self.static_symbols[cms[1]] = "?"
+			elif(cms[0] in self.support_symbolic_names):
+				# check for symbols
+				if(cms[1] in self.symbols):
+					# storing the reference like this:
+					# (lineno, caller, offset)
+					# The offset is needed because every argunemt has its own word.
+					self.symbol_refs[cms[1]].append((self.word_count, cms[0], 1 ))
+				else:
+					self.symbols[cms[1]]="?"
+					self.symbol_refs[cms[1]]=[(self.word_count, cms[0], 1)]
+
+			else:
+			 	raise SemanticError("{0} does not support symbolic names!".format(cms[0]))
+			compiled.append(cms[1])
+
+
+
+		if(second_arg_is_number):
+			compiled.append(int(cms[2], 16))
+		else:
+			if(cms[0] in self.support_static_symbolic_names):
+				# dereferencing symbols is done later
+				if( cms[2] not in  self.static_symbols):
+					self.static_symbols[cms[2]] = "?"
+			elif(cms[0] in self.support_symbolic_names):
+				if(cms[2] in self.symbols):
+					self.symbol_refs[cms[2]].append((self.word_count, cms[0], 2 ))
+				else:
+					self.symbols[cms[2]]="?"
+					self.symbol_refs[cms[2]]=[(self.word_count, cms[0], 2)]
+			else:
+			 	raise SemanticError("{0} does not support symbolic names!".format(cms[0]))
+			compiled.append(cms[2])
+		return compiled
+
+
+
+
+	def compile_db_command(self, cms):
+		compiled = []
+		arg_is_number = False
+		try:
+			int(cms[1], 16)
+			arg_is_number = True
+		except:
+			pass
+
+		if( not arg_is_number and 
+			(not cms[0] in self.support_symbolic_names) and
+			(not cms[0] in self.support_static_symbolic_names)):
+			raise SemanticError("{0} does not support symbolic names!".format(cms[0]))
+		if(arg_is_number and 
+			(not cms[0] in self.i_commands) and
+			(not int(cms[1], 16) in range(0, self.processor.ram.size + self.processor.flash.size))):
+			raise SemanticError("{0}: not a valid address!".format(cms[1]))
+
+		compiled_command = None
+		try:
+			compiled_command = self.db_commands[cms[0]]
+		except:
+			raise SyntaxError("{0}: command not found!".format(cms[0]))
+		compiled.append(compiled_command)
+
+		if(arg_is_number):
+			compiled.append(int(cms[1], 16))
+		else:
+			if(cms[0] in self.support_static_symbolic_names):
+				if( cms[1] not in  self.static_symbols):
+					self.static_symbols[cms[1]] = "?"
+			elif(cms[0] in self.support_symbolic_names):
+				if(cms[1] in self.symbols):
+					self.symbol_refs[cms[1]].append((self.word_count, cms[0], 1 ))
+				else:
+					self.symbols[cms[1]]="?"
+					self.symbol_refs[cms[1]]=[(self.word_count, cms[0], 1)]
+
+			else:
+			 	raise SemanticError("{0} does not support symbolic names!".format(cms[0]))
+			compiled.append(cms[1])
+		return compiled
+
+
+
+
 class UnboundReferenceError(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
