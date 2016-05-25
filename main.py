@@ -7,6 +7,7 @@ sys.path.append("./pythons/")
 from memory import *
 from processor import *
 use_gui = False
+test_timer_en = False
 if( use_gui):
 	try:
 		from basic_graph import *
@@ -52,8 +53,9 @@ if __name__=="__main__":
 			register_count = 12,
 			_callback_exit = p.callback_exit)
 		if(use_gui):
-			g=BasicGraphics(r,10,11)
-		p.register_interrupt(inter)
+			g = BasicGraphics(r,10,11)
+		if(test_timer_en):
+			p.register_interrupt(inter)
 		p.process()
 		input("hit enter to exit")
 		sys.exit()
