@@ -1,8 +1,10 @@
 """
 execute commands to modify the data
 """
-from memory import *
+from .memory import *
 import sys
+from .processor_functions import *
+import socket
 
 DEFAULT_RAM_S = 160
 DEFAULT_FLASH_S = 360
@@ -32,7 +34,6 @@ or a ``ret'':
 
     @interrupt foo
     icall foo_handle
-    ret
 
 or
     @interrupt bar
@@ -68,7 +69,6 @@ The Interrupt will be transmitted in the following format:
 
 """
 
-import socket
 
 class SIGSEGV(BaseException):
 	def __init__(self,*args):
@@ -77,16 +77,6 @@ class JMPException(BaseException):
 	def __init__(self,*args):
 		BaseException.__init__(self,*args)
 
-def Processor_from_str(_str):
-	# doing this using a csv interpreter would be
-	# just an overkill.
-	members=_str.split(";")
-	rm_size=int(members[0])
-	fl_size=int(members[1])
-	tb_commands=eval(members[2])
-	db_commands=eval(members[3])
-	sg_commands=eval(members[4])
-	return Processor(ram=Ram(rm_size), flash=Flash(fl_size),tb_commands=tb_commands,db_commands=db_commands,sg_commands=sg_commands)
 
 class Interrupt(object):
 	def __init__(self, address, name, processor_callback = None):
@@ -113,14 +103,39 @@ class InterruptDescriptor(object):
 
 
 class Processor(object):
-	from_str=Processor_from_str
+	@staticmethod
+	def from_str(_str):
+		# doing this using a csv interpreter would be
+		# just an overkill.
+		members = _str.split("|")
+		ram_str = "|".join(members[:2])
+		fl_size = int(members[2])
+		tb_commands = eval(members[3])
+		db_commands = eval(members[4])
+		sg_commands = eval(members[5])
+		commands = eval(members[6])
+		return Processor(ram = Ram.from_str(ram_str), 
+				flash = Flash(fl_size),
+				tb_commands = tb_commands,
+				db_commands = db_commands,
+				sg_commands = sg_commands,
+				commands = commands)
 	def __init__(self, ram = None,
 			flash = None,
 			tb_commands = None,
 			db_commands = None,
 			sg_commands = None,
 			interrupt_desciptors = [],
+			commands = ALL_FUNCTIONS,
 			*args):
+
+		self.commands = []
+
+		for name,function in commands:
+			self.register_function(name,function)
+
+
+		# proper cleanup...
 		def callback_exit():
 			print("exiting.")
 			del(self.ram)
@@ -128,6 +143,8 @@ class Processor(object):
 			sys.exit(0)
 			return c_int(0)
 		self.callback_exit = callback_exit
+
+
 		if(ram == None):
 			self.ram = Ram(DEFAULT_RAM_S, _callback_exit = self.callback_exit)
 		else:
@@ -148,7 +165,8 @@ class Processor(object):
 				0x19:"pmov",0x1a:"movp",
 				0x1d:"pjeq",0x1e:"pjne",
 				0x1f:"pjlt",0x20:"pjle",
-				0x21:"pjgt",0x22:"pjge"}
+				0x21:"pjgt",0x22:"pjge",
+				0x1f:"xor"}
 		else:
 			self.tb_commands = tb_commands
 		if(db_commands == None):
@@ -163,7 +181,8 @@ class Processor(object):
 			self.sg_commands = {0x9:"nop",0x11:"ret",0x24:"fdump"}
 		else:
 			self.sg_commands = sg_commands
-		self.PC = self.ram.size # used to move over the memory, starting at first flash block
+
+		self.PC = self.ram.size  # used to move over the memory, starting at first flash block
 		self.stddef = {"mov":self.mov,"add":self.add,
 			"sub":self.sub,"mul":self.mul,
 			"div":self.div,"ldi":self.ldi,
@@ -199,6 +218,11 @@ class Processor(object):
 		self.main_socket, self.subthread_socket = socket.socketpair()
 		# this is now the F_CPU by the way....
 		self.main_socket.settimeout(0.1)
+	def register_function(self, name, funct):
+		if(DEBUG):
+			print("DEBUG:: registering {} ::= {}".format(name, funct.__qualname__))
+		self.commands.append((name, funct.__qualname__))
+		setattr(self, name, funct)
 
 	def get_interrupt_address(self):
 		# leave 4 words for any call
@@ -236,156 +260,23 @@ class Processor(object):
 
 
 	def __dumps__(self):
-		return "{0}; {1}; {2}; {3}; {4};".format(self.ram.size,self.flash.size,self.tb_commands,self.db_commands,self.sg_commands)
+		def refactored_names(list_with_commands):
+			_str = "["
+			for command in list_with_commands:
+				_str += "('{}',{}),".format(command[0], command[1])
+			_str = _str[:-1]
+			_str += "]"
+			return _str
+		return "{0}| {1}| {2}| {3}| {4}| {5}".format(self.ram.definition_string(),
+				self.flash.size,
+				self.tb_commands,
+				self.db_commands,
+				self.sg_commands,
+				refactored_names(self.commands))
 	def __dump__(self,fname):
 		f=open(fname,"w")
 		f.write(self.__dumps__()+"\n")
 		f.close()
-	def mov(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in))
-	def movp(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_out=_to.read(_out)
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-
-		_to.write(_out,_from.read(_in))
-	def pmov(self,_in,_out): # mov from the ptr in _in to _out
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_in=_from.read(_in)
-
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in))
-
-	def add(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)+_to.read(_out))
-	def mod(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)%_to.read(_out))
-	def modi(self,_in,_out):	
-		_from=self.ram
-		if(_out>=self.ram.size):
-			_from=self.flash
-			_out-=self.ram.size
-		_from.write(_out,_in%_from.read(_out))
-
-	def sub(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)-_to.read(_out))
-	def addi(self,_in,_out):
-		_from=self.ram
-		if(_out>=self.ram.size):
-			_from=self.flash
-			_out-=self.ram.size
-		_from.write(_out,_in+_from.read(_out))
-
-	def subi(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_in-_to.read(_out))
-	def mul(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)*_to.read(_out))
-	def div(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		try:
-			_to.write(_out,_from.read(_in)//_to.read(_out))
-		except ZeroDivisionError:
-			_to.write(_out,0)
-	def ldi(self,_in,_out):
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_in)
-	def inc(self,_inout):
-		_to=self.ram
-		if(_inout>=self.ram.size):
-			_to=self.flash
-			_inout-=self.ram.size
-		_to.write(_inout,_to.read(_inout)+1)
-	def dec(self,_inout):
-		_to=self.ram
-		if(_inout>=self.ram.size):
-			_to=self.flash
-			_inout-=self.ram.size
-		_to.write(_inout,_to.read(_inout)-1)
-	def neg(self,_inout):
-		_to=self.ram
-		if(_inout>=self.ram.size):
-			_to=self.flash
-			_inout-=self.ram.size
-		_to.write(_inout,_to.read(_inout)*-1)
 	def __jmp__(self, ptr, static = False, addrspace_inflash = False ):
 		""" move the ptr to a new place """
 		oldloc = self.PC
@@ -403,214 +294,6 @@ class Processor(object):
 			print("DEBUG::[static][jmp]({})".format(self.PC))
 		self.traceback.append((oldloc,self.PC))
 		raise JMPException(str(oldloc))
-	def jmp(self,loc):
-		self.__jmp__(loc)
-	def pjmp(self,_in):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		self.__jmp__(_from.read(_in))
-	def pjne(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)!=0):
-			self.__jmp__(_to.read(_out))
-	def jne(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)!=0):
-			self.__jmp__(_to)
-	def pjeq(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)==0):
-			self.__jmp__(_to.read(_out))
-	def jeq(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)==0):
-			self.__jmp__(_to)
-	def pjge(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)>=0):
-			self.__jmp__(_to.read(_out))
-	def jge(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)>=0):
-			self.__jmp__(_to)
-	def pjle(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)<=0):
-			self.__jmp__(_to.read(_out))
-	def jle(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)<=0):
-			self.__jmp__(_to)
-	def pjgt(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)>0):
-			self.__jmp__(_to.read(_out))
-	def jgt(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)>0):
-			self.__jmp__(_to)
-	def pjlt(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		if(_from.read(_in)<0):
-			self.__jmp__(_to.read(_out))
-	def jlt(self,_in,_to):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		if(_from.read(_in)<0):
-			self.__jmp__(_to)
-	def xor(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)^_to.read(_out))
-	def _or(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)|_to.read(_out))
-	
-	def _and(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_from.read(_in)&_to.read(_out))
-
-	def xori(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to.write(_out,_in^_to.read(_out))
-	def ori(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_in|_to.read(_out))
-	
-	def andi(self,_in,_out):
-		_from=self.ram
-		if(_in>=self.ram.size):
-			_from=self.flash
-			_in-=self.ram.size
-		_to=self.ram
-		if(_out>=self.ram.size):
-			_to=self.flash
-			_out-=self.ram.size
-		_to.write(_out,_in&_to.read(_out))
-	def nop(self):
-		pass
-
-	def call(self,ptr):
-		if(DEBUG > 3):
-			print("DEBUG::call({})".format(ptr)) 
-		self.stack.append(self.PC)
-		self.__jmp__(ptr)
-	def ret(self):
-		old_pc=self.stack.pop()
-		# here we need static jumping! 
-		self.__jmp__(old_pc+2,static=True) # +2 args of call
-
-	def pop(self,reg):
-		try:
-			self.ram.popr(reg)
-		except IndexError:
-			raise SIGSEGV("Pop from empty stack! memory: {0} ( = {1} ) real: {2} ( = {3} ) traceback: {4}".format(hex(self.PC-self.ram.size),self.PC-self.ram.size,hex(self.PC),self.PC,self.traceback))
-	# for savings
-	#
-	def fdump(self):
-		self.flash.dump()
-	def push(self,reg):
-		self.ram.pushr(reg)
-
-	# call at the interrupt handle:
-	# usage:
-	#     @interrupt foo
-	#     icall foo_interrupt_handle
-	#     ret
-	def icall(self, address):
-		self.stack.append(self.PC)
-		self.__jmp__(address, static = True, addrspace_inflash = False)
 
 
 	def process(self):
@@ -650,7 +333,7 @@ class Processor(object):
 							_ptr_loc.read(ptr),
 							self.db_commands[com],
 							_ptr_loc.read(ptr + 1)))
-			else:
+			elif(com in self.tb_commands):
 				print("--word[{}]: {} (= <{}>) <{}> <{}>".format(ptr,
 							_ptr_loc.read(ptr),
 							self.tb_commands[com],
@@ -658,16 +341,16 @@ class Processor(object):
 							_ptr_loc.read(ptr+2)))
 		self.abs_comms += 1
 		if(com in self.sg_commands):
-			self.stddef[self.sg_commands[com]]()
+			self.stddef[self.sg_commands[com]](self)
 			self.PC+=1
 			return 1
 		if(com in self.db_commands):
-			self.stddef[self.db_commands[com]](_ptr_loc.read(ptr+1))
+			self.stddef[self.db_commands[com]](self, _ptr_loc.read(ptr + 1))
 			self.PC+=2
 			self.loads += 1
 			return 2
 		if(com in self.tb_commands):
-			self.stddef[self.tb_commands[com]](_ptr_loc.read(ptr+1),_ptr_loc.read(ptr+2))
+			self.stddef[self.tb_commands[com]](self, _ptr_loc.read(ptr + 1),_ptr_loc.read(ptr + 2))
 			self.PC+=3
 			self.loads += 2
 			return 3

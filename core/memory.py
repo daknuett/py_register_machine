@@ -4,7 +4,7 @@ in addition to this some more object orientation.
 """
 from ctypes import *
 import os,time,sys
-from shared_lib import shared_lib
+from .shared_lib import shared_lib
 
 SFR_COMM=CFUNCTYPE(c_void_p)
 IO_FUNCT_READ=CFUNCTYPE(c_int,c_void_p)
@@ -58,6 +58,14 @@ class SpecialFunctionRegister(Register):
 
 class Ram(object):
 	""""""
+	@staticmethod
+	def from_str(_str, callback_exit = None):
+		size,registers = _str.split("|")
+		register_count = int(registers[:registers.index("/")])
+		return Ram(int(size), registers = registers,
+				register_count = register_count,
+				_callback_exit = callback_exit)
+
 	def __init__(self,
 			size,
 			registers = "10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",
@@ -67,11 +75,13 @@ class Ram(object):
 			_callback_exit = None):
 		def callback_exit():
 			print("exiting.")
+			del(self)
 			sys.exit(0)
 			return c_int(0)
 
 		if(_callback_exit == None):
 			_callback_exit = callback_exit
+		self.register_string = registers
 
 		self.memlib = cdll.LoadLibrary(memlib_file_name)
 		self.size = size
@@ -81,6 +91,7 @@ class Ram(object):
 		self.IO_functs = []	# protection against the goddammed garbage collection
 		self.add_SFR_callback(0xff, SFR_COMM(_callback_exit))
 		def hw_print_int():
+			print("DEBUG:: hw_print_int()")
 			print(self.read(0))
 		def ram_dump():
 			self.dump()
@@ -168,6 +179,8 @@ class Ram(object):
 	def set_x_data_at(self,at,x_data):
 		self.IO_functs.append(x_data)
 		self.memlib.Ram_set_x_data_at(self._repr,c_uint(at),x_data)
+	def definition_string(self):
+		return "{}|{}".format(self.size, self.register_string)
 
 
 class Flash(object):

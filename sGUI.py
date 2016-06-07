@@ -1,10 +1,9 @@
 import sys
-sys.path.append("./pythons")
 
-from memory import *
-from processor import *
-from basic_graph import *
-from assembler import *
+from core.memory import *
+from core.processor import *
+from extra.basic_graph import *
+from tools.assembler import *
 
 from tkinter import *
 from tkinter.messagebox import *

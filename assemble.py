@@ -1,10 +1,11 @@
 import sys
 
-sys.path.append("./pythons/")
 
-from assembler import *
-from processor import *
-from memory import *
+from tools.assembler import *
+from core.processor import *
+from core.processor_functions import *
+from core.interrupts import timer0_interrupt_descriptor, watchdog_interrupt_descriptor
+from core.memory import *
 
 from optparse import OptionParser
 import os,sys
@@ -33,7 +34,8 @@ if __name__=="__main__":
 #	p=Preprocessor(opts.fname)
 #	p.do_all()
 	proc=Processor.from_str(open(opts.proc_def).read())
-	proc.register_interrupt(InterruptDescriptor("foo"))
+	proc.register_interrupt(timer0_interrupt_descriptor)
+	proc.register_interrupt(watchdog_interrupt_descriptor)
 	asm=Assembler(proc,opts.fname)
 	total,used=asm.compile()
 	print("{} of {} blocks used: {} %".format(used,total,(used/total)*100))

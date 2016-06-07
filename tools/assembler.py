@@ -1,5 +1,5 @@
-from memory import *
-from processor import *
+from ..core.memory import *
+from ..core.processor import *
 import string
 
 
@@ -176,13 +176,15 @@ class Assembler(object):
 		if(DEBUG):
 			print("DEBUG::interrupts: ",self.interrupts)
 		for address, handle in self.interrupts.items():
+			# append a ret
+			handle.append(0x11)
+			if(DEBUG):
+				print("DEBUG::interrupts:: ({}|{})".format(address, handle))
 			for _iter,content in enumerate(handle):
 				if(isinstance(content, int)):
 					if(DEBUG):
 						print("DEBUG::writing to address {} : {}".format(address + _iter, content))
 					self.processor.flash.write(address + _iter, content)
-					if(DEBUG):
-						print("DEBUG::readback({}) : {}".format(address,self.processor.flash.read(address)))
 				else:
 
 					if(content in self.symbols):
@@ -196,7 +198,7 @@ class Assembler(object):
 	def compileline(self,lineno,line,lines):
 		compiled = []
 		if(self.flag_skipline):
-			flag_skipline = False
+			self.flag_skipline = False
 			return []
 		else:
 			if(DEBUG):

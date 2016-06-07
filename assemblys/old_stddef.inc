@@ -13,7 +13,7 @@
 #define	LCD_chr	a
 ; the cursor, where to put the char
 #define	LCD_cur	b
-; current there is a memory of size 400
+; currently there is a memory of size 400
 #define RAMEND_HIGH 190
 ; 11 registers
 #define RAMEND_LOW c

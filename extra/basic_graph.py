@@ -1,7 +1,7 @@
-from memory import *
+from ..core.memory import *
 
 import tkinter as tk
-from processor import *
+from ..core.processor import *
 
 import sys
 
