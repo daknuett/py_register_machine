@@ -16,8 +16,9 @@ def watchdog_start(_callable):
 def watchdog_interrupt():
 	if(__watchdog_callable[0]):
 		__watchdog_callable[0]()
-	__current_watchdog_timer = Timer(4, watchdog_interrupt)
-	__current_watchdog_timer.start()
+	if(watchdog_en[0]):
+		__current_watchdog_timer = Timer(4, watchdog_interrupt)
+		__current_watchdog_timer.start()
 	
 
 def watchdog_reset():
@@ -28,6 +29,7 @@ def watchdog_reset():
 def watchdog_stop():
 	if(__current_watchdog_timer):
 		__current_watchdog_timer._delete()
+	watchdog_en = [False]
 
 def get_watchdog_callable():
 	return __watchdog_callable[0]
@@ -41,7 +43,6 @@ __timer0_callable = [None]
 
 
 def timer0_start(_callable):
-	print("DEBUG:: timer0_start:: ({}|{}|{})".format(timer0_en[0], timer0_time[0], _callable))
 	__timer0_callable[0] = _callable
 	if(not timer0_en[0]):
 		return
@@ -50,12 +51,14 @@ def timer0_start(_callable):
 
 def timer0_interrupt():
 	if(__timer0_callable[0]):
-		__watchdog_callable[0]()
-	__timer0_timer = Timer(timer0_time[0], timer0_interrupt)
-	__timer0_timer.start()
+		__timer0_callable[0]()
+	if(timer0_en[0]):
+		__timer0_timer = Timer(timer0_time[0], timer0_interrupt)
+		__timer0_timer.start()
 def timer0_stop():
 	if(__timer0_timer):
 		__timer0_timer._delete()
+	timer0_en = [False]
 def get_timer0_callable():
 	return __timer0_callable[0]
 
@@ -73,7 +76,7 @@ def en_dis_interrupts(reg, content):
 	__GIFR = content
 	for bit, interrupt_stuff in interrupt_bits.items():
 		enable, start, stop, get_callable = interrupt_stuff
-		if(content & bit):
+		if(content & bit != 0):
 			enable[0] = True
 			start(get_callable())
 		else:

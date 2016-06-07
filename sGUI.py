@@ -1,9 +1,9 @@
 import sys
 
-from core.memory import *
-from core.processor import *
-from extra.basic_graph import *
-from tools.assembler import *
+from .core.memory import *
+from .core.processor import *
+from .extra.basic_graph import *
+from .tools.assembler import *
 
 from tkinter import *
 from tkinter.messagebox import *

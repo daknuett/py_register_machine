@@ -3,7 +3,7 @@ from ..core.processor import *
 import string
 
 
-STD_INC_PATH = "./assemblys/"
+STD_INC_PATH = "./py_register_machine/assemblys/"
 DEBUG = True
 
 """ use an assembly file to programm the flash. """

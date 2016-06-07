@@ -1,11 +1,11 @@
 import sys
 
 
-from tools.assembler import *
-from core.processor import *
-from core.processor_functions import *
-from core.interrupts import timer0_interrupt_descriptor, watchdog_interrupt_descriptor
-from core.memory import *
+from .tools.assembler import *
+from .core.processor import *
+from .core.processor_functions import *
+from .core.interrupts import timer0_interrupt_descriptor, watchdog_interrupt_descriptor
+from .core.memory import *
 
 from optparse import OptionParser
 import os,sys

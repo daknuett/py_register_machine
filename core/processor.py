@@ -8,7 +8,7 @@ import socket
 
 DEFAULT_RAM_S = 160
 DEFAULT_FLASH_S = 360
-DEBUG = 5
+DEBUG = 0
 
 
 """
@@ -127,9 +127,11 @@ class Processor(object):
 			sg_commands = None,
 			interrupt_desciptors = [],
 			commands = ALL_FUNCTIONS,
+			interrupt_disable_functions = [], # to disable Timers on exit
 			*args):
 
 		self.commands = []
+		self.interrupt_disable_functions = interrupt_disable_functions
 
 		for name,function in commands:
 			self.register_function(name,function)
@@ -137,9 +139,11 @@ class Processor(object):
 
 		# proper cleanup...
 		def callback_exit():
-			print("exiting.")
+			print("exit.")
 			del(self.ram)
 			del(self.flash)
+			for function in self.interrupt_disable_functions:
+				function()
 			sys.exit(0)
 			return c_int(0)
 		self.callback_exit = callback_exit

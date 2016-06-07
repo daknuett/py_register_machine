@@ -3,9 +3,9 @@
 import sys
 
 
-from core.memory import *
-from core.processor import *
-from core.interrupts import *
+from .core.memory import *
+from .core.processor import *
+from .core.interrupts import *
 
 use_gui = False
 test_timer_en = False
@@ -47,9 +47,10 @@ if __name__=="__main__":
 			g = BasicGraphics(r,10,11)
 		p.register_interrupt(timer0_interrupt_descriptor)
 		p.register_interrupt(watchdog_interrupt_descriptor)
+		p.interrupt_disable_functions.append(timer0_stop)
+		p.interrupt_disable_functions.append(watchdog_stop)
 		p.ram.set_x_data_at(19, p.ram.memlib.newIOFuncts(gifr_write, gifr_read))
 		p.ram.set_x_data_at(20, p.ram.memlib.newIOFuncts(t0tsr_write, t0tsr_read))
 		p.process()
 		input("hit enter to exit")
 		sys.exit()
-	print("command {} not recognized".format(sys.argv[1]))
