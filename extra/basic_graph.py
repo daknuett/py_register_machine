@@ -57,17 +57,13 @@ class BasicGraphics(object):
 			tk.mainloop()
 			sys.exit()
 		start_x()
-		c_putc=IO_FUNCT_WRITE(putc)
-		c_do_null=IO_FUNCT_READ(do_null)
-		self.store_to_protect_against_garbage_collection.append(c_putc)
-		self.store_to_protect_against_garbage_collection.append(c_do_null)
-		self.memory.set_x_data_at(self.chr_reg_nmbr,self.memory.memlib.newIOFuncts(c_putc,c_do_null))
-		c_set_cursor=IO_FUNCT_WRITE(set_cursor)
-		c_get_cursor=IO_FUNCT_READ(get_cursor)
-		self.memory.set_x_data_at(self.cursor_reg_nmbr,self.memory.memlib.newIOFuncts(c_set_cursor,c_get_cursor))
-		self.store_to_protect_against_garbage_collection.append(c_set_cursor)
-		self.store_to_protect_against_garbage_collection.append(c_get_cursor)
-		self.memory.add_SFR_callback(0x06,SFR_COMM(mainloop_exit))
+		c_putc = (putc)
+		c_do_null = (do_null)
+		self.memory.set_io_functions_at(self.chr_reg_nmbr, (c_putc,c_do_null))
+		c_set_cursor = set_cursor
+		c_get_cursor = get_cursor
+		self.memory.set_io_functions_at(self.cursor_reg_nmbr, (c_set_cursor,c_get_cursor))
+		self.memory.add_SFR_callback(0x06,(mainloop_exit))
 	def reset(self):
 		self.current_display=[" "*self.max_per_line for x in range(self.max_lines)]
 
@@ -81,8 +77,6 @@ if __name__=="__main__":
 	f=Flash(200,saved=True,std_savename=b"basic_graphics.flash")
 	p=Processor(r,f)
 	p.process()
-	while(1):
-		break
 
 
 

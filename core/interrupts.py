@@ -86,8 +86,8 @@ def en_dis_interrupts(reg, content):
 def gifr_content(*args):
 	return __GIFR
 
-gifr_write = IO_FUNCT_WRITE(en_dis_interrupts)
-gifr_read = IO_FUNCT_READ(gifr_content)
+gifr_write = (en_dis_interrupts)
+gifr_read = (gifr_content)
 stuff_to_store.append((gifr_write,gifr_read))
 
 def timer0_set_time(reg, time):
@@ -96,8 +96,8 @@ def timer0_set_time(reg, time):
 def timer0_get_time(reg):
 	return timer0_time[0]
 
-t0tsr_write = IO_FUNCT_WRITE(timer0_set_time)
-t0tsr_read = IO_FUNCT_READ(timer0_get_time)
+t0tsr_write = (timer0_set_time)
+t0tsr_read = (timer0_get_time)
 
 stuff_to_store.append((t0tsr_write,t0tsr_read))
 
