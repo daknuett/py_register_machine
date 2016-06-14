@@ -2,7 +2,7 @@
 a register machine written in c and python3
 
 You can write programs for the machine using some kind of assembly language.
-Compile it using the assembler.py package.
+Compile it using the assembler module.
 
 (C) 2015 Daniel Knuettel
 
@@ -34,6 +34,18 @@ The commands  __st__ or __ld__ are not yet implemented.
 The engine is not designed for a fix usage, but for expansion 
 _from the user_, so no assembly directive/mnemonic definition is provided,
 as _everybody_ may add his very own directives and mnemonics. 
+
+## Branches
+
+There are several branches, but mainly, because I did not remove them yet.
+The important branches are:
+
+* _master_: should be stable, but outdated
+* _current_: should be stable and up to date
+* _python-standalone_: This branch avoids the c-space for memory.   
+  This branch should be on the same level like _current_.
+  I recommend using this branch on Windows(r).
+
 
 ## Installation
 
