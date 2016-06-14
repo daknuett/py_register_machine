@@ -58,9 +58,19 @@ class SpecialFunctionRegister(Register):
 
 class IORegister(Register):
 	def __init__(self, nmbr, callback_read, callback_write, *args):
-		self.callback_read = callback_read
-		self.callback_write = callback_write
 		Register.__init__(self, nmbr, *args)
+		def read_none():
+			return self._repr[0]
+		def write_none(val):
+			return
+		if(not hasattr(callback_read, "__call__")):
+			self.callback_read = read_none
+		else:
+			self.callback_read = callback_read
+		if(not hasattr(callback_write, "__call__")):
+			self.callback_write = write_none
+		else:
+			self.callback_write = callback_write
 	def write(self, val):
 		self.callback_write(val)
 		Register.write(self, val)
