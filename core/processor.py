@@ -293,7 +293,7 @@ class Processor(object):
 				print("__jmp__ to ",ptr)
 			self.PC = ptr
 		else:
-			self.PC+=ptr # relative!!
+			self.PC += ptr # relative!!
 		if(DEBUG > 6):
 			print("DEBUG::[static][jmp]({})".format(self.PC))
 		self.traceback.append((oldloc,self.PC))

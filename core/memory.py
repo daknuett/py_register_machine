@@ -85,7 +85,10 @@ class Ram(object):
 
 		self.memlib = cdll.LoadLibrary(memlib_file_name)
 		self.size = size
-		register_reprs = self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
+		if(registers != None):
+			register_reprs = self.memlib.Registers_from_string(c_char_p(registers.encode("ascii")));
+		else:
+			register_reprs = 0
 		self._repr = self.memlib.newRam(c_size_t(size),register_reprs,register_count)
 		self.callback_functs = []
 		self.IO_functs = []	# protection against the goddammed garbage collection
@@ -106,8 +109,7 @@ class Ram(object):
 		self.add_SFR_callback(0xfe,halt_cpu)
 
 		# we need the number of registers
-		indx=registers.index("/")
-		self.reg_cnt=int(registers[0:indx])
+		self.reg_cnt = register_count
 		# a stack for push
 		self.stack=[ [] for i in range(self.reg_cnt)]
 		# stack size and usage
