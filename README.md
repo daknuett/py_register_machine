@@ -1,7 +1,7 @@
 # py_register_machine
-a register machine written in c and python3
+a register machine written in python3
 
-You can write programs for the machine using some kind of assembly language.
+You can write programs for the machine using the KASM assembly language.
 Compile it using the assembler.py package.
 
 (C) 2015 Daniel Knuettel
@@ -41,14 +41,12 @@ as _everybody_ may add his very own directives and mnemonics.
  * Make the directory you want to work in using `mkdir -p /home/<you>/path/to/folder`
  * Go to that directory `cd /home/<you>/path/to/folder`
  * Get the source using `git clone https://github.com/daknuett/py_register_machine`
- * [optional] Get the branch you want to use `cd py_register_machine && git pull origin current`
- * Compile `cd py_register_machine && make`
+ * [optional] Get the branch you want to use `cd py_register_machine && git pull origin python-standalone`
  
 * under the $PYTHONPATH
  * Go to a path in $PYTHONPATH `cd /home/<you>/.local/lib/python3.5/site-packages/
  * Get the source using `git clone https://github.com/daknuett/py_register_machine`
- * [optional] Get the branch you want to use `cd py_register_machine && git pull origin current`
- * Compile: `cd py_register_machine && make`
+ * [optional] Get the branch you want to use `cd py_register_machine && git pull origin python-standalone`
 
 ## Usage
 __Run a sample__
