@@ -40,13 +40,13 @@ as _everybody_ may add his very own directives and mnemonics.
 * in-a-folder   
  * Make the directory you want to work in using `mkdir -p /home/<you>/path/to/folder`
  * Go to that directory `cd /home/<you>/path/to/folder`
- * Get the source using `git clone https://github.com/daknuett/py_register_machine`
- * [optional] Get the branch you want to use `cd py_register_machine && git pull origin python-standalone`
+ * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
+ * Compile `cd py_register_machine && make`
  
 * under the $PYTHONPATH
  * Go to a path in $PYTHONPATH `cd /home/<you>/.local/lib/python3.5/site-packages/
- * Get the source using `git clone https://github.com/daknuett/py_register_machine`
- * [optional] Get the branch you want to use `cd py_register_machine && git pull origin python-standalone`
+ * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
+ * Compile: `cd py_register_machine && make`
 
 ## Usage
 __Run a sample__
