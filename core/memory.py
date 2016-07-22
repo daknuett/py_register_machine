@@ -3,7 +3,6 @@ A python-only implementation of the PyRegisterMachine's
 memory module.
 Using numpy.array as a memory representation.
 """
-from ctypes import *
 import os,time,sys
 import numpy as np
 
@@ -27,14 +26,13 @@ class StdRegister(Register):
 		Register.__init__(self, nmbr, *args)
 
 class OutPutRegister(Register):
-	def __init__(self, nmbr, stream_name, *args):
+	def __init__(self, nmbr, stream_name, open_stream = None, *args):
 		Register.__init__(self,nmbr,*args)
-		open_stream = None
-		if((stream_name == "stdout") or (stream_name == "/dev/stdout")):
-			open_stream = sys.stdout
-		else:
-			open_stream = open(stream_name, "w")
-			
+		if(open_stream == None):
+			if((stream_name == "stdout") or (stream_name == "/dev/stdout")):
+				open_stream = sys.stdout
+			else:
+				open_stream = open(stream_name, "w")
 		self.stream = open_stream
 	def read(self):
 		return Register.read(self)
@@ -108,7 +106,7 @@ class Ram(object):
 			size,
 			registers = "10/0,3,n;1,3,n;2,2,/dev/stdout;3,1,n;4,3,n;5,3,n;6,3,n;7,3,n;8,3,n;9,3,n;",
 			register_count = 10,
-			stacksize = 20, 
+			stacksize = 20, open_stream = sys.stdout, # used for hw_print_int
 			_callback_exit = None):
 		def callback_exit():
 			print("exiting.")
@@ -130,8 +128,10 @@ class Ram(object):
 		self._repr = np.zeros(self.size, dtype = np.int64)
 		self.add_SFR_callback(0xff, _callback_exit)
 
+		self.open_stream = open_stream
+
 		def hw_print_int():
-			print(self.read(0))
+			self.open_stream.write(self.read(0))
 		def ram_dump():
 			self.dump()
 
