@@ -41,12 +41,10 @@ as _everybody_ may add his very own directives and mnemonics.
  * Make the directory you want to work in using `mkdir -p /home/<you>/path/to/folder`
  * Go to that directory `cd /home/<you>/path/to/folder`
  * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
- * Compile `cd py_register_machine && make`
  
 * under the $PYTHONPATH
  * Go to a path in $PYTHONPATH `cd /home/<you>/.local/lib/python3.5/site-packages/
  * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
- * Compile: `cd py_register_machine && make`
 
 ## Usage
 __Run a sample__
@@ -69,5 +67,11 @@ __Run a sample__
 ___See___ the project's wiki < https://github.com/daknuett/py_register_machine/wiki > page for more info about usage.
 
 ___See___ also the tutorial/documentation project < https://github.com/daknuett/py_register_machine_tutorials > for further interesting infos
+
+### Plans
+
+* Use more pythonic definitions for Register Machines
+* Generate a more module-conformable interface
+* A complete rewrite with a slightly modified architecture, removing all the bad debts
 
 _Daniel Knuettel_
