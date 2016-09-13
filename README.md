@@ -1,8 +1,16 @@
 # py_register_machine
-a register machine written in c and python3
+a register machine written in python3
+
+___WARNING___:
+
+__PyRegisterMachine is deprecated and no longer supported. Use PyRegisterMachine2 instead!__
+
+[PyRegisterMachine2](https://github.com/daknuett/py_register_machine2)
+[PyRegisterMachine2 docs](https://daknuett.github.io/py_register_machine2)
+
 
 You can write programs for the machine using the KASM assembly language.
-Compile it using the assembler module.
+Compile it using the assembler.py package.
 
 (C) 2015 Daniel Knuettel
 
@@ -35,30 +43,16 @@ The engine is not designed for a fix usage, but for expansion
 _from the user_, so no assembly directive/mnemonic definition is provided,
 as _everybody_ may add his very own directives and mnemonics. 
 
-## Branches
-
-There are several branches, but mainly, because I did not remove them yet.
-The important branches are:
-
-* _master_: should be stable, but outdated
-* _current_: should be stable and up to date
-* _python-standalone_: This branch avoids the c-space for memory.   
-  This branch should be on the same level like _current_.
-  I recommend using this branch on Windows(r).
-
-
 ## Installation
 
 * in-a-folder   
  * Make the directory you want to work in using `mkdir -p /home/<you>/path/to/folder`
  * Go to that directory `cd /home/<you>/path/to/folder`
  * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
- * Compile `cd py_register_machine && make`
  
 * under the $PYTHONPATH
  * Go to a path in $PYTHONPATH `cd /home/<you>/.local/lib/python3.5/site-packages/
  * Get the source using `git clone https://github.com/daknuett/py_register_machine --single-branch -b current`
- * Compile: `cd py_register_machine && make`
 
 ## Usage
 __Run a sample__
@@ -81,5 +75,11 @@ __Run a sample__
 ___See___ the project's wiki < https://github.com/daknuett/py_register_machine/wiki > page for more info about usage.
 
 ___See___ also the tutorial/documentation project < https://github.com/daknuett/py_register_machine_tutorials > for further interesting infos
+
+### Plans
+
+* Use more pythonic definitions for Register Machines
+* Generate a more module-conformable interface
+* A complete rewrite with a slightly modified architecture, removing all the bad debts
 
 _Daniel Knuettel_
