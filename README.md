@@ -1,6 +1,14 @@
 # py_register_machine
 a register machine written in python3
 
+___WARNING___:
+
+__PyRegisterMachine is deprecated and no longer supported. Use PyRegisterMachine2 instead!__
+
+[PyRegisterMachine2](https://github.com/daknuett/py_register_machine2)
+[PyRegisterMachine2 docs](https://daknuett.github.io/py_register_machine2)
+
+
 You can write programs for the machine using the KASM assembly language.
 Compile it using the assembler.py package.
 
